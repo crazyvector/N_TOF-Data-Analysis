@@ -1,0 +1,63 @@
+{
+  "modelChoice": 4,
+  "energyInterpolation": 1368,
+  "ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    11,
+    12
+  ],
+  "sources": [
+    {
+      "detector": "LABR",
+      "runName": "Rebin_Eu152_summed_histograms_energy.root",
+      "energies": [
+        "121",
+        "244",
+        "344",
+        "964"
+      ],
+      "search_windows": [
+        "105",
+        "160",
+        "200",
+        "280",
+        "280",
+        "420",
+        "900",
+        "1040"
+      ],
+      "sigma_guess": [
+        "3.0",
+        "5.0",
+        "5.0",
+        "5.0"
+      ],
+      "intensity": [
+        "28.53",
+        "7.55",
+        "26.59",
+        "14.51"
+      ],
+      "dIntensity": [
+        "0.16",
+        "0.04",
+        "0.2",
+        "0.07"
+      ],
+      "halflife": "426564079.2",
+      "dHalflife": "284018.39999999997",
+      "activity": "37980",
+      "dActivity": "0",
+      "initial_activity": true,
+      "measure_time": "3497.1",
+      "decay_time": "182186700",
+      "source": "Eu152"
+    }
+  ]
+}

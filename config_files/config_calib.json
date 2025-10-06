@@ -1,0 +1,44 @@
+{
+  "inputFolder": "/eos/experiment/ntof/processing/official/done/",
+  "outputFolder": "calibrations/Run220099/",
+  "rebinFactor": 1,
+  "xminHist": 0,
+  "xmaxHist": 16000,
+  "binWidth": 4,
+  "nBinX": 4000,
+  "sources": [
+    {
+      "n_runs": 1,
+      "run_names": [
+        "run220099"
+      ],
+      "detector": "LABR",
+      "ndet": 12,
+      "source": "Y88",
+      "energies": [
+        898,
+        1836
+      ],
+      "ids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        11,
+        12
+      ],
+      "fitParameters": {
+        "fitRatio": 0.1,
+        "fitSigma": 15,
+        "plotMinRange": 800,
+        "plotMaxRange": 15000,
+        "c1": 6,
+        "c2": 100
+      }
+    }
+  ],
+  "fitType": "linear"
+}

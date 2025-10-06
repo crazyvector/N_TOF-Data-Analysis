@@ -1,0 +1,32 @@
+{
+  "inputFiles": {
+    "histogramFile": "/eos/user/a/acristes/Analysis/Calibrations/For-Calibrations/2D_Plot/histograma_LABR_Mg24.root",
+    "histogramName": "histogram_5",
+    "gammaEnergy": 1368
+  },
+  "fluxInfo": {
+    "fluxFileInput": "out.hist.root",
+    "fluxFileOutput": "flux.root",
+    "histogramFluxName": "histfluka"
+  },
+  "rebinningAndPulses": {
+    "rebinFactor": 25,
+    "minEntries": 5,
+    "nrPulses": 74936
+  },
+  "targetParameters": {
+    "massNumber": 24.305,
+    "density": 0.134,
+    "detectorEfficiency": 0.000511
+  },
+  "fitParameters": {
+    "peakSearchSigma": 5,
+    "peakRatio": 0.05,
+    "preFitRange": 150,
+    "gammaEnergyWindow": 25
+  },
+  "outputFiles": {
+    "pdfName": "CrossSectionPlots.pdf",
+    "rootName": "output.root"
+  }
+}
