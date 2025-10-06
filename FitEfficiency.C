@@ -75,6 +75,8 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
             if (i == 27) effErr_ = std::stod(item);
         }
 
+        cout << Form("Citit: Energy=%.2f keV, Efficiency=%.4f %%, EffErr=%.4f %%", energy, eff, effErr_) << std::endl;
+
         if (energy <= 0 || eff <= 0) continue;
         energies.push_back(energy);
         efficiencies.push_back(eff / 100.0); // Convertim % în fracție
@@ -94,7 +96,19 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
     if (modelChoice == 4) {
         effFunc = new TF1("effFunc", efficiencyFitFunc4, 50, 2000, 4);
         effFunc->SetParNames("p0", "p1", "p2", "p3");
-        effFunc->SetParameters(-10.0, 2.0, -0.1, 0.01);
+        //effFunc->SetParameters(-10.0, 2.0, -0.1, 0.01);
+        // sugestie initializari pentru modelul cu 4 parametri:
+        effFunc->SetParameters(
+            -38.44,   // p0
+            18.21,   // p1
+            -2.922,  // p2
+            0.148   // p3
+        );
+        // limite rezonabile pentru stabilitate:
+        effFunc->SetParLimits(0, -100, 0);   // p0 este negativ pentru eficiențe < 1
+        effFunc->SetParLimits(1, -50, 50);   // p1 poate fi mare (linia in ln-space)
+        effFunc->SetParLimits(2, -20, 20);   // p2
+        effFunc->SetParLimits(3, -2, 2);     // p3 (nu trebuie exagerat)
         funcFormula = "ε(E) = exp(p0 + p1*ln(E) + p2*ln²(E) + p3*ln³(E))";
     } else if (modelChoice == 6) {
         effFunc = new TF1("effFunc", efficiencyFitFunc6, 50, 2000, 6);
@@ -102,9 +116,8 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         effFunc->SetParameters(-10.0, 2.0, -0.1, -4.0, 0.2, -0.002);
         funcFormula = "ln(ε) = y * (2/π) * atan(exp(...)) - 25";
     } else {
-         std::cerr << "❌ Model de fit invalid. Se folosește modelul implicit (4 parametri)." << std::endl;
-         effFunc = new TF1("effFunc", efficiencyFitFunc4, 50, 2000, 4);
-         modelChoice = 4;
+        std::cerr << "❌ Model de fit invalid. Se folosește modelul implicit (4 parametri)." << std::endl;
+        return;
     }
 
     effFunc->SetLineColor(kRed);
@@ -121,7 +134,7 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
     g->Draw("AP");
 
     // --- Fit-ul ---
-    TFitResultPtr r = g->Fit(effFunc, "RS");
+    TFitResultPtr r = g->Fit(effFunc, "RS"); 
 
     // --- Legendă ---
     TLegend *legend = new TLegend(0.45, 0.75, 0.88, 0.88);

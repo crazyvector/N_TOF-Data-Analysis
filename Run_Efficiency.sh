@@ -121,16 +121,37 @@ peak_analysis(\"$RUN_NAME\", \"$DETECTOR\", \"$SOURCE_NAME\", std::vector<int>{$
     echo "$ROOT_CMD"
     echo "$ROOT_CMD" | root -l -b
 
-    # ----------------------------------------------------
-    # 2. Run Efficiency Fit
-    # ----------------------------------------------------
-    ROOT_CMD_2=".L FitEfficiency.C
-FitEfficiency(\"$DETECTOR\", \"$SOURCE_NAME\", $FIT_MODEL, $ENERGY_INTERPOLATION);"
+done
 
+# ----------------------------------------------------
+# 2. Combină fișierele de output dacă sunt mai multe surse
+# ----------------------------------------------------
+OUTPUT_FILES=()
+for ((i=0; i<NUM_SOURCES; i++)); do
+    DETECTOR=$(jq -r ".sources[$i].detector" "$CONFIG_FILE")
+    SOURCE_NAME=$(jq -r ".sources[$i].source" "$CONFIG_FILE")
+    OUTPUT_FILES+=("efficiency/PeakAreas_Detector=${DETECTOR}_Source=${SOURCE_NAME}.txt")
+done
+
+# ----------------------------------------------------
+# 3. Run Efficiency Fit
+# ----------------------------------------------------
+
+if [ ${#OUTPUT_FILES[@]} -gt 1 ]; then
+    COMBINED_FILE="efficiency/PeakAreas_Detector=${DETECTOR}_Source=Combined.txt"
+    # Ia headerul din primul fișier
+    head -n 1 "${OUTPUT_FILES[0]}" > "$COMBINED_FILE"
+    # Ia toate liniile, fără header, din fiecare fișier
+    for f in "${OUTPUT_FILES[@]}"; do
+        tail -n +2 "$f" >> "$COMBINED_FILE"
+    done
+    echo "✅ Fișierele au fost combinate în $COMBINED_FILE"
+    # Rulează FitEfficiency pe fișierul combinat
+    ROOT_CMD_2=".L FitEfficiency.C
+FitEfficiency(\"$DETECTOR\", \"Combined\", $FIT_MODEL, $ENERGY_INTERPOLATION);"
     echo "$ROOT_CMD_2"
     echo "$ROOT_CMD_2" | root -l -b
-
-done
+fi
 
 echo "=========================================================="
 echo "✅ All efficiency calculations executed successfully."
