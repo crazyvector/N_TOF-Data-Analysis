@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Physics Data Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+
+        .view {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 90%;
+            z-index: 100;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+        }
+
+        .has-error {
+            border-color: #ef4444 !important;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen p-8 flex flex-col items-center">
+
+    <!-- Notificare Toast -->
+    <div id="toast-message"
+        class="fixed top-5 right-5 z-50 p-4 rounded-lg shadow-xl text-white transform transition-all duration-500 hidden opacity-0 translate-y-[-20px]">
+    </div>
+
+    <!-- Container mesaj JSON -->
+    <div id="message-container"></div>
+
+    <div class="w-full max-w-5xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8">
+
+        <!-- Antet -->
+        <div class="flex justify-between items-center mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-green-500">
+                Data Analysis
+            </h1>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <svg id="moon-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                        </path>
+                    </svg>
+                    <svg id="sun-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Meniul principal -->
+        <div id="main-menu" class="view space-y-4">
+            <h2 class="text-2xl font-semibold mb-6 text-center text-gray-800 dark:text-white">Choose an option</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <button id="btnEnergy"
+                    class="p-8 bg-blue-100 dark:bg-blue-600 text-blue-800 dark:text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+                    <div class="flex items-center justify-center mb-2"><svg class="w-10 h-10" fill="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zm0 2a6 6 0 110 12A6 6 0 0112 6zm0 2a4 4 0 100 8 4 4 0 000-8zm0 2a2 2 0 110 4 2 2 0 010-4z" />
+                        </svg></div>
+                    <span class="font-bold text-lg">Energy Calibration</span>
+                </button>
+                <button id="btnEfficiency"
+                    class="p-8 bg-green-100 dark:bg-green-600 text-green-800 dark:text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+                    <div class="flex items-center justify-center mb-2"><svg class="w-10 h-10" fill="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zM6 12h12v2H6v-2zm-2 2h4v4h-4v-4z" />
+                        </svg></div>
+                    <span class="font-bold text-lg">Efficiency</span>
+                </button>
+                <button id="btn2dPlot"
+                    class="p-8 bg-purple-100 dark:bg-purple-600 text-purple-800 dark:text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+                    <div class="flex items-center justify-center mb-2"><svg class="w-10 h-10" fill="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zM6 12h12v2H6v-2zm-2 2h4v4h-4v-4z" />
+                        </svg></div>
+                    <span class="font-bold text-lg">2D Plot</span>
+                </button>
+                <button id="btnCrossSection"
+                    class="p-8 bg-red-100 dark:bg-red-600 text-red-800 dark:text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+                    <div class="flex items-center justify-center mb-2"><svg class="w-10 h-10" fill="currentColor"
+                            viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 2a8 8 0 100 16 8 8 0 000-16zM6 12h12v2H6v-2zm-2 2h4v4h-4v-4z" />
+                        </svg></div>
+                    <span class="font-bold text-lg">Cross-Section</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Vizualizare Calibrare -->
+        <div id="calibration-view" class="view hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 dark:text-white">Energy Calibration</h2>
+            <div class="flex justify-between items-center">
+                <button id="btn-back-to-menu-calibration"
+                    class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Input Folder</label>
+                    <input type="text" id="input-folder" value="/eos/experiment/ntof/processing/official/done/"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Output Folder</label>
+                    <input type="text" id="output-folder"
+                        value="calibrations/"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Rebin Factor</label>
+                    <input type="number" id="rebin-factor"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Xmin Hist</label>
+                    <input type="number" id="xmin-hist"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Xmax Hist</label>
+                    <input type="number" id="xmax-hist"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Bin Width</label>
+                    <input type="number" step="0.01" id="bin-width"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of Bins</label>
+                    <input type="number" id="n-bin-x"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm"
+                        readonly>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Fit Type</h3>
+                <div class="flex space-x-4 mb-6">
+                    <label class="flex items-center"><input type="radio" name="fit_type" value="linear" checked
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Linear</span></label>
+                    <label class="flex items-center"><input type="radio" name="fit_type" value="polynomial"
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Polynomial</span></label>
+                </div>
+            </div>
+
+            <div id="source-forms-container" class="space-y-6"></div>
+            <button id="add-source-btn"
+                class="w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">Add
+                Source</button>
+
+            <button id="run-calibration-btn"
+                class="w-full py-3 px-4 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition">Run
+                Calibration</button>
+        </div>
+
+        <!-- Vizualizare Eficiență -->
+        <div id="efficiency-view" class="view hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 dark:text-white">Efficiency Calculation</h2>
+            <div class="flex justify-between items-center">
+                <button id="btn-back-to-menu-efficiency"
+                    class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="efficiency-source-forms-container" class="space-y-6"></div>
+            <button id="add-efficiency-source-btn"
+                class="w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition">Add
+                Source</button>
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Model Choice</h3>
+                <div class="flex space-x-4 mb-6">
+                    <label class="flex items-center"><input type="radio" name="model_choice" value="4" checked
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">4 Parameters</span></label>
+                    <label class="flex items-center"><input type="radio" name="model_choice" value="6"
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">6 Parameters</span></label>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Energy Interpolation</h3>
+                <div class="flex space-x-6 mb-6">
+                    <!-- Energy Interpolation -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Energy Interpolation (keV)
+                        </label>
+                        <input type="number" name="energy_interpolation" value="1000" min="1" step="1"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+
+                    <!-- Detector IDs -->
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Detector ids
+                        </label>
+                        <input type="text" name="ids_eff"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <button id="run-efficiency-btn"
+                class="w-full py-3 px-4 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition">Calculate
+                Efficiency</button>
+        </div>
+
+        <!-- Vizualizare Plot 2D -->
+        <div id="plot-2d-view" class="view hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 dark:text-white">Generate 2D Plot</h2>
+            <div class="flex justify-between items-center">
+                <button id="btn-back-to-menu-plot"
+                    class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">ROOT File Folder</label>
+                    <input type="text" id="plot-root-file" value="/eos/experiment/ntof/processing/official/done/"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Run names (space
+                        separated)</label>
+                    <input type="text" id="plot-runs"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Calibration File</label>
+                    <input type="text" id="plot-calibration-file" value="calibration_parameters.txt"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Detector Name</label>
+                    <input type="text" id="plot-detector-name"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of
+                        Detectors</label>
+                    <input type="number" id="plot-detector-count"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Source Name</label>
+                    <input type="text" id="plot-source-name"
+                        class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                    <p class="error-message hidden">This field is required.</p>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Fit Type</h3>
+                <div class="flex space-x-4 mb-6">
+                    <label class="flex items-center"><input type="radio" name="fit_type_eff" value="linear" checked
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Linear</span></label>
+                    <label class="flex items-center"><input type="radio" name="fit_type_eff" value="polynomial"
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Polynomial</span></label>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Pulse Threshold</h3>
+                <div class="flex space-x-4 mb-6">
+                    <label class="flex items-center"><input type="radio" name="ps_int_tr" value="7.5e+12" checked
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Dedicated</span></label>
+                    <label class="flex items-center"><input type="radio" name="ps_int_tr" value="3.5e+12"
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Parasitic</span></label>
+                </div>
+            </div>
+
+            <!-- Parametrii pentru axa X -->
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">X-Axis Binning (Variable)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">T-Min</label>
+                        <input type="number" id="x-t-min"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">T-Max</label>
+                        <input type="number" id="x-t-max"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of Decades
+                            (ndec)</label>
+                        <input type="number" id="x-ndec"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm"
+                            readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Bins per Decade
+                            (N_BPDEC)</label>
+                        <input type="number" id="x-nbpdec"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of Bins on X
+                            (nbinsX)</label>
+                        <input type="number" id="x-nbins"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm"
+                            readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Step</label>
+                        <input type="number" id="x-step"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm"
+                            readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parametrii pentru axa Y -->
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Y-Axis Binning (Uniform)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Y-Min</label>
+                        <input type="number" id="y-min"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Y-Max</label>
+                        <input type="number" id="y-max"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of Bins on Y
+                            (n_bin_y)</label>
+                        <input type="number" id="y-nbins"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Bin Width</label>
+                        <input type="number" id="y-bin-width"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm"
+                            readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zona experimentala-->
+            <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4">Experimental Area</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Experimental Area
+                        </label>
+                        <select id="ear"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                            <option value="">Select...</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                        </select>
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Distance</label>
+                        <input type="number" id="distance"
+                            class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                        <p class="error-message hidden">This field is required.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button id="run-plot-btn"
+                class="w-full py-3 px-4 bg-purple-500 text-white font-bold rounded-lg shadow-md hover:bg-purple-600 transition">Generate
+                Plot</button>
+        </div>
+
+        <!-- Vizualizare Cross-Section -->
+        <div id="cross-section-view" class="view hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-center text-gray-800 dark:text-white">
+                Cross-Section Calculation
+            </h2>
+
+            <div class="flex justify-between items-center">
+                <button id="btn-back-to-menu-cross-section"
+                    class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Folder & Histogram Section -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Input Files</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Histogram File</label>
+                        <input type="text" id="cs-hist-file"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Histogram Name</label>
+                        <input type="text" id="cs-hist-name" value="histogram_5"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Gamma Energy
+                            (keV)</label>
+                        <input type="number" step="0.01" id="cs-gamma-energy"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flux Section -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Flux Info</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Flux Input File (change submit folder)</label>
+                        <input type="text" id="cs-flux-file-input" value="out.hist.root"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Flux Output File (change submit folder)</label>
+                        <input type="text" id="cs-flux-file-output" value="flux.root"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Histogram Flux
+                            Name</label>
+                        <input type="text" id="cs-flux-hist-name" value="histfluka"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rebin / Min Entries / Pulses -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Rebinning & Pulses</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Rebin Factor</label>
+                        <input type="number" id="cs-rebin-factor" value="25"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Min Entries</label>
+                        <input type="number" id="cs-min-entries" value="5"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Nr Dedicated
+                            Pulses</label>
+                        <input type="number" id="cs-nr-pulses"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Parameters -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Target Parameters</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Mass Number</label>
+                        <input type="number" step="0.001" id="cs-target-mass"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Density
+                            (g/cm²)</label>
+                        <input type="number" step="0.001" id="cs-target-rho"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Detector
+                            Efficiency</label>
+                        <input type="number" step="0.000001" id="cs-target-eff"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fit Parameters -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Fit Parameters</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Peak Search
+                            Sigma</label>
+                        <input type="number" step="0.01" id="cs-fit-sigma" value="5"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Peak Ratio</label>
+                        <input type="number" step="0.01" id="cs-fit-ratio" value="0.05"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Pre-Fit Range
+                            (eV)</label>
+                        <input type="number" step="0.01" id="cs-fit-prefit" value="150"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Gamma Energy
+                            Window</label>
+                        <input type="number" step="0.01" id="cs-fit-gamma-window" value="25"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Files -->
+            <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-4">
+                <h3 class="text-xl font-semibold mb-2">Output Files</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">PDF Name</label>
+                        <input type="text" id="cs-output-pdf" value="CrossSectionPlots.pdf"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">ROOT Name</label>
+                        <input type="text" id="cs-output-root" value="output.root"
+                            class="mt-1 block w-full px-3 py-2 bg-gray-200 dark:bg-gray-600 border rounded-md shadow-sm required">
+                    </div>
+                </div>
+            </div>
+
+            <button id="run-cross-section-btn"
+                class="w-full py-3 px-4 bg-red-500 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition">
+                Calculate Cross-Section
+            </button>
+        </div>
+
+
+    </div>
+
+    <!-- Container pentru ieșire -->
+    <div id="output-element"
+        class="mt-8 w-full max-w-5xl bg-gray-200 dark:bg-gray-700 p-6 rounded-lg shadow-inner hidden">
+        <h3 class="text-xl font-semibold mb-2">Ieșire</h3>
+        <pre id="output-text" class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-200"></pre>
+    </div>
+
+    <script>
+        // UI elements
+        const mainMenu = document.getElementById('main-menu');
+        const calibrationView = document.getElementById('calibration-view');
+        const efficiencyView = document.getElementById('efficiency-view');
+        const plot2dView = document.getElementById('plot-2d-view');
+        const crossSectionView = document.getElementById('cross-section-view');
+        const btnEnergy = document.getElementById('btnEnergy');
+        const btnEfficiency = document.getElementById('btnEfficiency');
+        const btn2dPlot = document.getElementById('btn2dPlot');
+        const btnCrossSection = document.getElementById('btnCrossSection');
+        const btnBackToMenuCalibration = document.getElementById('btn-back-to-menu-calibration');
+        const btnBackToMenuEfficiency = document.getElementById('btn-back-to-menu-efficiency');
+        const btnBackToMenuPlot = document.getElementById('btn-back-to-menu-plot');
+        const btnBackToMenuCrossSection = document.getElementById('btn-back-to-menu-cross-section');
+        const sourceFormsContainer = document.getElementById('source-forms-container');
+        const addSourceBtn = document.getElementById('add-source-btn');
+        const efficiencySourceFormsContainer = document.getElementById('efficiency-source-forms-container');
+        const addEfficiencySourceBtn = document.getElementById('add-efficiency-source-btn');
+        const runCalibrationBtn = document.getElementById('run-calibration-btn');
+        const runEfficiencyBtn = document.getElementById('run-efficiency-btn');
+        const runPlotBtn = document.getElementById('run-plot-btn');
+        const runCrossSectionBtn = document.getElementById('run-cross-section-btn');
+        const outputElement = document.getElementById('output-element');
+        const outputText = document.getElementById('output-text');
+        const toastMessage = document.getElementById('toast-message');
+        const xminHistInput = document.getElementById('xmin-hist');
+        const xmaxHistInput = document.getElementById('xmax-hist');
+        const binWidthInput = document.getElementById('bin-width');
+        const nBinXInput = document.getElementById('n-bin-x');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const moonIcon = document.getElementById('moon-icon');
+        const sunIcon = document.getElementById('sun-icon');
+
+        let calibrationSourceCounter = 0;
+        let efficiencySourceCounter = 0;
+
+        // Date mock pentru popularea formularelor
+        const calibrationSourceData = {
+            "Y88": {
+                energies: [898, 1836],
+                fitRatio: 0.1,
+                fitSigma: 15,
+                plotMin: 800,
+                plotMax: 15000,
+                c1: 15,
+                c2: 225
+            },
+            "AmBe": {
+                energies: [4400],
+                fitRatio: 0.1,
+                fitSigma: 15,
+                plotMin: 2500,
+                plotMax: 15000,
+                c1: 10,
+                c2: 0
+            },
+            "Cr53": {
+                energies: [9719],
+                fitRatio: 0.1,
+                fitSigma: 15,
+                plotMin: 800,
+                plotMax: 15000,
+                c1: 180,
+                c2: 300
+            },
+            "Cs137": {
+                energies: [672],
+                fitRatio: 0.1,
+                fitSigma: 15,
+                plotMin: 800,
+                plotMax: 15000,
+                c1: 180,
+                c2: 300
+            },
+            "Eu152": {
+                energies: [672],
+                fitRatio: 0.1,
+                fitSigma: 15,
+                plotMin: 800,
+                plotMax: 15000,
+                c1: 180,
+                c2: 300
+            }
+        };
+
+
+        const efficiencySourceData = {
+            "Y88": {
+                detector: "LABR",
+                runName: "histograma_run220099_LABR_Y88_energy.root",
+                energies: "898 1836",
+                search_windows: "800 1000, 1700 1950",
+                sigma_guess: "5.0 10.0",
+                intensity: "93.7 99.2",
+                dIntensity: "0.3 0.3",
+                halflife: (106.626 * 24 * 3600).toString(),
+                dHalflife: (0.020 * 24 * 3600).toString(),
+                activity: "268000",
+                dActivity: "13000",
+                initial_activity: false,
+                measure_time: "353.7",
+                decay_time: "4434900"
+            },
+            "Eu152": {
+                detector: "LABR",
+                runName: "histograma_run220099_LABR_Y88_energy.root",
+                energies: "121 244 344 964",
+                search_windows: "105 160, 200 280, 280 420, 900 1040",
+                sigma_guess: "3.0 5.0 5.0 5.0",
+                intensity: "28.53 7.55 26.59 14.51",
+                dIntensity: "0.16 0.04 0.2 0.07",
+                halflife: (13.517 * 365.25 * 24 * 3600).toString(),
+                dHalflife: (0.009 * 365.25 * 24 * 3600).toString(),
+                activity: "37980",
+                dActivity: "0",
+                initial_activity: true,
+                measure_time: "3497.1",
+                decay_time: "182186700"
+            }
+        };
+
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            if (type === 'success') {
+                toastMessage.className = 'fixed top-5 right-5 z-50 p-4 rounded-lg shadow-xl text-white transform transition-all duration-500 bg-green-500';
+            } else if (type === 'error') {
+                toastMessage.className = 'fixed top-5 right-5 z-50 p-4 rounded-lg shadow-xl text-white transform transition-all duration-500 bg-red-500';
+            }
+            toastMessage.classList.remove('hidden', 'opacity-0', 'translate-y-[-20px]');
+            toastMessage.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                toastMessage.classList.remove('opacity-100', 'translate-y-0');
+                toastMessage.classList.add('opacity-0', 'translate-y-[-20px]');
+            }, 3000);
+        }
+
+        // --- Logic de navigare ---
+        function showView(viewToShow) {
+            const allViews = [mainMenu, calibrationView, efficiencyView, plot2dView, crossSectionView];
+            allViews.forEach(view => view.classList.add('hidden'));
+            viewToShow.classList.remove('hidden');
+        }
+
+        btnEnergy.addEventListener('click', () => {
+            showView(calibrationView);
+            if (sourceFormsContainer.children.length === 0) {
+                addNewCalibrationSourceForm();
+            }
+        });
+
+        btnEfficiency.addEventListener('click', () => {
+            showView(efficiencyView);
+            if (efficiencySourceFormsContainer.children.length === 0) {
+                addNewEfficiencySourceForm();
+            }
+        });
+
+        btn2dPlot.addEventListener('click', () => {
+            showView(plot2dView);
+        });
+
+        btnCrossSection.addEventListener('click', () => {
+            showView(crossSectionView);
+        });
+
+        btnBackToMenuCalibration.addEventListener('click', () => {
+            showView(mainMenu);
+        });
+
+        btnBackToMenuEfficiency.addEventListener('click', () => {
+            showView(mainMenu);
+        });
+
+        btnBackToMenuPlot.addEventListener('click', () => {
+            showView(mainMenu);
+        });
+
+        btnBackToMenuCrossSection.addEventListener('click', () => {
+            showView(mainMenu);
+        });
+
+        // Funcții pentru dialogul de confirmare JSON
+        function showJsonConfirm(title, jsonPayload, onConfirm, onCancel) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `
+                <div class="overlay" onclick="closeMessage()"></div>
+                <div class="message-box p-8 bg-white dark:bg-gray-800 rounded-lg shadow-xl text-gray-900 dark:text-gray-100">
+                    <h2 class="text-xl font-bold mb-4">${title}</h2>
+                    <pre class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm overflow-auto max-h-64">${jsonPayload}</pre>
+                    <div class="flex justify-end space-x-4 mt-4">
+                         <button onclick="closeMessage()" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition" id="cancel-btn">Anulează</button>
+                         <button id="ok-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md transition">OK, descarcă</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('ok-btn').addEventListener('click', async () => {
+                closeMessage();
+                onConfirm();
+            });
+            document.getElementById('cancel-btn').addEventListener('click', () => {
+                closeMessage();
+                if (onCancel) onCancel();
+            });
+        }
+
+        function closeMessage() {
+            const container = document.getElementById('message-container');
+            container.innerHTML = '';
+        }
+
+        window.closeMessage = closeMessage;
+
+        // --- Funcții de validare ---
+        function validateRequiredFields(viewElement) {
+            let isValid = true;
+            const requiredInputs = viewElement.querySelectorAll('.required');
+            requiredInputs.forEach(input => {
+                const errorMessage = input.nextElementSibling;
+                if (!input.value.trim()) {
+                    input.classList.add('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.remove('hidden');
+                    }
+                    isValid = false;
+                } else {
+                    input.classList.remove('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.add('hidden');
+                    }
+                }
+            });
+            return isValid;
+        }
+
+        // --- Logică pentru pagina de Calibrare ---
+
+        function createCalibrationSourceFormHTML(index) {
+            return `
+                <div class="source-form-group border-2 border-gray-300 dark:border-gray-600 p-6 rounded-lg relative" data-id="${index}">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Source #${index + 1}</h3>
+                        ${index > 0 ? '<button class="remove-source-btn text-red-500 hover:text-red-700 font-bold text-2xl" title="Delete source">&times;</button>' : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of runs</label>
+                            <input type="number" min="1" class="run-count-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Run names (separated by space)</label>
+                            <input type="text" placeholder="run220099 run220100" class="run-names-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 required">
+                            <p class="run-error-msg error-message hidden">The number of runs does not match!</p>
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Detector Name</label>
+                            <select class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md required">
+                                <option>LABR</option>
+                            </select>
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Number of detectors</label>
+                            <input type="number" min="1" class="ndet-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Source name</label>
+                            <select class="source-select mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md required">
+                                <option value="">Select a source</option>
+                                <option value="Y88">Y88</option>
+                                <option value="AmBe">AmBe</option>
+                                <option value="Cr53">Cr53</option>
+                                <option value="Cs137">Cs137</option>
+                                <option value="Eu152">Eu152</option>
+                            </select>
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Energies (keV) (separate with space)</label>
+                            <input type="text" placeholder="e.g., 898 1836" class="energies-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">List of IDs for fit (separate with space)</label>
+                            <input type="text" placeholder="1 2 3 4 5 8 11 12" class="ids-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 bg-gray-100 dark:bg-gray-700 rounded-lg mt-6">
+                        <h3 class="text-xl font-semibold mb-4">Peak Fit Parameters</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Fit Ratio</label>
+                                <input type="number" step="0.01" class="fit-ratio-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Fit Sigma</label>
+                                <input type="number" step="0.01" class="fit-sigma-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Plot Range Min</label>
+                                <input type="number" class="plot-min-range-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Plot Range Max</label>
+                                <input type="number" class="plot-max-range-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">c1 Constant</label>
+                                <input type="number" step="0.01" class="c1-constant-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">c2 Constant</label>
+                                <input type="number" step="0.01" class="c2-constant-input mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm required">
+                                <p class="error-message hidden">This field is required.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addNewCalibrationSourceForm() {
+            const formHTML = createCalibrationSourceFormHTML(calibrationSourceCounter);
+            sourceFormsContainer.insertAdjacentHTML('beforeend', formHTML);
+            calibrationSourceCounter++;
+        }
+
+        addSourceBtn.addEventListener('click', addNewCalibrationSourceForm);
+
+        sourceFormsContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-source-btn')) {
+                e.target.closest('.source-form-group').remove();
+            }
+        });
+
+        calibrationView.addEventListener('input', function (e) {
+            // Validare generală a câmpurilor obligatorii
+            if (e.target.classList.contains('required')) {
+                const errorMessage = e.target.nextElementSibling;
+                if (!e.target.value.trim()) {
+                    e.target.classList.add('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.remove('hidden');
+                    }
+                } else {
+                    e.target.classList.remove('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Validare specifică: număr de rulări vs. nume de rulări
+            if (e.target.matches('.run-count-input, .run-names-input')) {
+                const group = e.target.closest('.source-form-group');
+                const countInput = group.querySelector('.run-count-input');
+                const namesInput = group.querySelector('.run-names-input');
+                const errorMsg = group.querySelector('.run-error-msg');
+
+                const expectedCount = parseInt(countInput.value, 10);
+                const actualRuns = namesInput.value.trim().split(' ').filter(name => name !== '');
+
+                if (isNaN(expectedCount) || actualRuns.length === 0 || actualRuns.length === expectedCount) {
+                    errorMsg.classList.add('hidden');
+                    namesInput.classList.remove('has-error');
+                } else {
+                    errorMsg.classList.remove('hidden');
+                    namesInput.classList.add('has-error');
+                }
+            }
+        });
+
+        sourceFormsContainer.addEventListener('change', function (e) {
+            if (e.target.matches('.source-select')) {
+                const selectedSource = e.target.value;
+                const source = calibrationSourceData[selectedSource];
+                const group = e.target.closest('.source-form-group');
+
+                const energiesInput = group.querySelector('.energies-input');
+                const fitRatioInput = group.querySelector('.fit-ratio-input');
+                const fitSigmaInput = group.querySelector('.fit-sigma-input');
+                const plotMinRangeInput = group.querySelector('.plot-min-range-input');
+                const plotMaxRangeInput = group.querySelector('.plot-max-range-input');
+                const c1ConstantInput = group.querySelector('.c1-constant-input');
+                const c2ConstantInput = group.querySelector('.c2-constant-input');
+
+                if (source) {
+                    energiesInput.value = source.energies.join(' ');
+                    fitRatioInput.value = source.fitRatio;
+                    fitSigmaInput.value = source.fitSigma;
+                    plotMinRangeInput.value = source.plotMin;
+                    plotMaxRangeInput.value = source.plotMax;
+                    c1ConstantInput.value = source.c1;
+                    c2ConstantInput.value = source.c2;
+                } else {
+                    energiesInput.value = '';
+                    fitRatioInput.value = '';
+                    fitSigmaInput.value = '';
+                    plotMinRangeInput.value = '';
+                    plotMaxRangeInput.value = '';
+                    c1ConstantInput.value = '';
+                    c2ConstantInput.value = '';
+                }
+            }
+        });
+
+        // Câmpuri pentru calibrare
+        [xminHistInput, xmaxHistInput, binWidthInput].forEach(input => {
+            input.addEventListener('input', updateBinCount);
+        });
+
+        function updateBinCount() {
+            const xmin = parseFloat(xminHistInput.value);
+            const xmax = parseFloat(xmaxHistInput.value);
+            const binWidth = parseFloat(binWidthInput.value);
+
+            if (!isNaN(xmin) && !isNaN(xmax) && !isNaN(binWidth) && binWidth > 0) {
+                const nBins = (xmax - xmin) / binWidth;
+                nBinXInput.value = nBins.toFixed(2); // Afișează cu 2 zecimale
+            } else {
+                nBinXInput.value = '';
+            }
+        }
+
+        runCalibrationBtn.addEventListener('click', async () => {
+            if (!validateRequiredFields(calibrationView)) {
+                showToast("Please fill in all required fields.", 'error');
+                return;
+            }
+
+            const allSourceGroups = sourceFormsContainer.querySelectorAll('.source-form-group');
+            let collectedData = {
+                inputFolder: document.getElementById('input-folder').value,
+                outputFolder: document.getElementById('output-folder').value,
+                rebinFactor: parseFloat(document.getElementById('rebin-factor').value),
+                xminHist: parseFloat(document.getElementById('xmin-hist').value),
+                xmaxHist: parseFloat(document.getElementById('xmax-hist').value),
+                binWidth: parseFloat(document.getElementById('bin-width').value),
+                nBinX: parseFloat(document.getElementById('n-bin-x').value),
+                sources: [],
+                fitType: document.querySelector('input[name="fit_type"]:checked').value
+            };
+
+            // Validare grup de surse
+            let allSourcesValid = true;
+            for (const group of allSourceGroups) {
+                const countInput = group.querySelector('.run-count-input');
+                const namesInput = group.querySelector('.run-names-input');
+                const ndetInput = group.querySelector('.ndet-input');
+                const sourceSelect = group.querySelector('.source-select');
+                const energiesInput = group.querySelector('.energies-input');
+                const idsInput = group.querySelector('.ids-input');
+                const fitRatioInput = group.querySelector('.fit-ratio-input');
+                const fitSigmaInput = group.querySelector('.fit-sigma-input');
+                const plotMinRangeInput = group.querySelector('.plot-min-range-input');
+                const plotMaxRangeInput = group.querySelector('.plot-max-range-input');
+                const c1ConstantInput = group.querySelector('.c1-constant-input');
+                const c2ConstantInput = group.querySelector('.c2-constant-input');
+
+
+                if (!countInput.value || !namesInput.value || !ndetInput.value || !sourceSelect.value || !energiesInput.value || !idsInput.value || !fitRatioInput.value || !fitSigmaInput.value || !plotMinRangeInput.value || !plotMaxRangeInput.value || !c1ConstantInput.value || !c2ConstantInput.value) {
+                    allSourcesValid = false;
+                    // Activează validarea pentru fiecare câmp din grup
+                    const requiredGroupInputs = group.querySelectorAll('.required');
+                    requiredGroupInputs.forEach(input => {
+                        const errorMessage = input.nextElementSibling;
+                        if (!input.value.trim()) {
+                            input.classList.add('has-error');
+                            if (errorMessage) {
+                                errorMessage.classList.remove('hidden');
+                            }
+                        }
+                    });
+                }
+
+                const expectedCount = parseInt(countInput.value, 10);
+                const actualRuns = namesInput.value.trim().split(' ').filter(name => name !== '');
+
+                if (actualRuns.length !== expectedCount) {
+                    allSourcesValid = false;
+                    namesInput.classList.add('has-error');
+                    group.querySelector('.run-error-msg').classList.remove('hidden');
+                }
+
+                const energiesArray = energiesInput.value.trim().split(' ').filter(e => e !== '').map(Number);
+                if (energiesArray.some(isNaN)) {
+                    allSourcesValid = false;
+                    energiesInput.classList.add('has-error');
+                    energiesInput.nextElementSibling.textContent = "Please enter only numbers separated by space.";
+                    energiesInput.nextElementSibling.classList.remove('hidden');
+                } else {
+                    energiesInput.classList.remove('has-error');
+                    energiesInput.nextElementSibling.classList.add('hidden');
+                }
+
+                collectedData.sources.push({
+                    n_runs: expectedCount,
+                    run_names: actualRuns,
+                    detector: group.querySelector('select:nth-of-type(1)').value,
+                    ndet: parseInt(ndetInput.value, 10),
+                    source: sourceSelect.value,
+                    energies: energiesArray,
+                    ids: idsInput.value.trim().split(' ').filter(id => id !== '').map(id => parseInt(id, 10)),
+                    fitParameters: {
+                        fitRatio: parseFloat(fitRatioInput.value),
+                        fitSigma: parseFloat(fitSigmaInput.value),
+                        plotMinRange: parseFloat(plotMinRangeInput.value),
+                        plotMaxRange: parseFloat(plotMaxRangeInput.value),
+                        c1: parseFloat(c1ConstantInput.value),
+                        c2: parseFloat(c2ConstantInput.value)
+                    }
+                });
+            }
+
+            if (!allSourcesValid) {
+                showToast("Please correct the errors in the source groups.", 'error');
+                return;
+            }
+
+            const jsonPayload = JSON.stringify(collectedData, null, 2);
+            showJsonConfirm("Confirmare date calibrare?", jsonPayload, () => {
+                // Funcția de descărcare a fișierului
+                const blob = new Blob([jsonPayload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config_calib.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Calibration data downloaded successfully!", 'success');
+            });
+        });
+
+        // --- Logică pentru pagina de Eficiență ---
+
+        function createEfficiencySourceFormHTML(index) {
+            return `
+                <div class="efficiency-source-form-group border-2 border-gray-300 dark:border-gray-600 p-6 rounded-lg relative" data-id="${index}">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Source #${index + 1}</h3>
+                        ${index > 0 ? '<button class="remove-efficiency-source-btn text-red-500 hover:text-red-700 font-bold text-2xl" title="Delete source">&times;</button>' : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Source Name</label>
+                            <select class="source-select mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md required">
+                                <option value="">Select a source</option>
+                                <option value="Y88">Y88</option>
+                                <option value="Eu152">Eu152</option>
+                            </select>
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Detector Name</label>
+                            <select data-field="detector" class="detector-select mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md required">
+                                <option value="">Select a detector</option>
+                                <option value="LABR">LABR</option>
+                            </select>
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Run Name</label>
+                            <input type="text" data-field="runName" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Energy (keV)</label>
+                            <input type="text" data-field="energies" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Search windows</label>
+                            <input type="text" data-field="search_windows" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Sigma guess</label>
+                            <input type="text" data-field="sigma_guess" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Intensity (%)</label>
+                            <input type="text" data-field="intensity" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Intensity error</label>
+                            <input type="text" data-field="dIntensity" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Half Life (s)</label>
+                            <input type="text" data-field="halflife" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Half Life error (s)</label>
+                            <input type="text" data-field="dHalflife" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Activity (Bq)</label>
+                            <input type="text" data-field="activity" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Activity error (Bq)</label>
+                            <input type="text" data-field="dActivity" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div class="flex items-center mt-2 md:col-span-2">
+                           <input id="initial-activity-${index}" data-field="initial_activity" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                           <label for="initial-activity-${index}" class="ml-2 block text-sm text-gray-900 dark:text-gray-200">Initial activity</label>
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Measure time (s)</label>
+                            <input type="text" data-field="measure_time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Decay time (s)</label>
+                            <input type="text" data-field="decay_time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addNewEfficiencySourceForm() {
+            const formHTML = createEfficiencySourceFormHTML(efficiencySourceCounter);
+            efficiencySourceFormsContainer.insertAdjacentHTML('beforeend', formHTML);
+            efficiencySourceCounter++;
+        }
+
+        addEfficiencySourceBtn.addEventListener('click', addNewEfficiencySourceForm);
+
+        efficiencyView.addEventListener('change', function (e) {
+            if (e.target.matches('.source-select')) {
+                const group = e.target.closest('.efficiency-source-form-group');
+                const selectedSource = e.target.value;
+                const source = efficiencySourceData[selectedSource];
+
+                // Golește toate câmpurile de introducere
+                group.querySelectorAll('input').forEach(input => input.value = '');
+                group.querySelector('[data-field="initial_activity"]').checked = false;
+
+                if (source) {
+                    group.querySelector('[data-field="energies"]').value = source.energies;
+                    group.querySelector('[data-field="search_windows"]').value = source.search_windows;
+                    group.querySelector('[data-field="sigma_guess"]').value = source.sigma_guess;
+                    group.querySelector('[data-field="intensity"]').value = source.intensity;
+                    group.querySelector('[data-field="dIntensity"]').value = source.dIntensity;
+                    group.querySelector('[data-field="halflife"]').value = source.halflife;
+                    group.querySelector('[data-field="dHalflife"]').value = source.dHalflife;
+                    group.querySelector('[data-field="activity"]').value = source.activity;
+                    group.querySelector('[data-field="dActivity"]').value = source.dActivity;
+                    group.querySelector('[data-field="initial_activity"]').checked = source.initial_activity;
+                    group.querySelector('[data-field="measure_time"]').value = source.measure_time;
+                    group.querySelector('[data-field="decay_time"]').value = source.decay_time;
+                    group.querySelector('[data-field="detector"]').value = source.detector;
+                    group.querySelector('[data-field="runName"]').value = source.runName;
+                }
+            }
+        });
+        efficiencyView.addEventListener('input', function (e) {
+            if (e.target.classList.contains('required')) {
+                const errorMessage = e.target.nextElementSibling;
+                if (e.target.value.trim()) {
+                    e.target.classList.remove('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.add('hidden');
+                    }
+                }
+            }
+        });
+
+        efficiencySourceFormsContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-efficiency-source-btn')) {
+                e.target.closest('.efficiency-source-form-group').remove();
+            }
+        });
+
+        runEfficiencyBtn.addEventListener('click', async () => {
+            if (!validateRequiredFields(efficiencyView)) {
+                showToast("Please fill in all required fields.", 'error');
+                return;
+            }
+
+            const allSourceGroups = efficiencySourceFormsContainer.querySelectorAll('.efficiency-source-form-group');
+            const collectedData = {
+                modelChoice: Number(document.querySelector('input[name="model_choice"]:checked').value),
+                energyInterpolation: Number(document.querySelector('input[name="energy_interpolation"]').value),
+                ids: document.querySelector('input[name="ids_eff"]').value.trim().split(' ').filter(id => id !== '').map(id => parseInt(id, 10)),
+                sources: []
+            };
+
+            let allSourcesValid = true;
+
+            allSourceGroups.forEach(group => {
+                let groupValid = true;
+                const sourceData = {};
+
+                group.querySelectorAll('[data-field]').forEach(input => {
+                    const fieldName = input.getAttribute('data-field');
+
+                    // Validare câmpuri obligatorii
+                    if (input.classList.contains('required') && !input.value.trim() && input.type !== 'checkbox') {
+                        input.classList.add('has-error');
+                        group.querySelector('.error-message').classList.remove('hidden');
+                        groupValid = false;
+                    } else {
+                        input.classList.remove('has-error');
+                        group.querySelector('.error-message').classList.add('hidden');
+                    }
+
+                    // Colectare date
+                    if (input.type === 'checkbox') {
+                        sourceData[fieldName] = input.checked;
+                    } else {
+                        const value = input.value.trim();
+                        // Dacă sunt mai multe valori separate prin spațiu sau virgulă, le facem array
+                        if (value.includes(',') || value.includes(' ')) {
+                            sourceData[fieldName] = value.split(/[\s,]+/).map(v => v.trim());
+                        } else {
+                            sourceData[fieldName] = value;
+                        }
+                    }
+                });
+
+                // Adaugă și numele sursei
+                sourceData.source = group.querySelector('.source-select').value;
+
+                if (groupValid) {
+                    collectedData.sources.push(sourceData);
+                } else {
+                    allSourcesValid = false;
+                }
+            });
+
+            if (!allSourcesValid) {
+                showToast("Please correct the errors in the source groups.", 'error');
+                return;
+            }
+
+            const jsonPayload = JSON.stringify(collectedData, null, 2);
+
+            showJsonConfirm("Confirmare date eficiență?", jsonPayload, () => {
+                const blob = new Blob([jsonPayload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config_eff.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Efficiency data downloaded successfully!", 'success');
+            });
+        });
+
+
+
+        // --- Logică pentru pagina de Plot 2D ---
+        const xTMin = document.getElementById('x-t-min');
+        const xTMax = document.getElementById('x-t-max');
+        const xNdec = document.getElementById('x-ndec');
+        const xNbpdec = document.getElementById('x-nbpdec');
+        const xNbins = document.getElementById('x-nbins');
+        const xStep = document.getElementById('x-step');
+
+        const yMin = document.getElementById('y-min');
+        const yMax = document.getElementById('y-max');
+        const yNbins = document.getElementById('y-nbins');
+        const yBinWidth = document.getElementById('y-bin-width');
+
+        document.getElementById("ear").addEventListener("change", function () {
+            const distanceInput = document.getElementById("distance");
+            if (this.value === "1") {
+                distanceInput.value = 182.3;
+            } else if (this.value === "2") {
+                distanceInput.value = 19.3;
+            } else {
+                distanceInput.value = "";
+            }
+        });
+
+        plot2dView.addEventListener('input', function (e) {
+            if (e.target.classList.contains('required')) {
+                const errorMessage = e.target.nextElementSibling;
+                if (e.target.value.trim()) {
+                    e.target.classList.remove('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Calcul automat pentru axa X
+            if (e.target === xTMin || e.target === xTMax || e.target === xNbpdec) {
+                const tMinVal = parseFloat(xTMin.value);
+                const tMaxVal = parseFloat(xTMax.value);
+                const nbpdecVal = parseInt(xNbpdec.value, 10);
+
+                if (!isNaN(tMinVal) && !isNaN(tMaxVal)) {
+                    const ndecVal = tMaxVal - tMinVal;
+                    xNdec.value = ndecVal.toFixed(2);
+                } else {
+                    xNdec.value = '';
+                }
+
+                if (!isNaN(tMinVal) && !isNaN(tMaxVal) && !isNaN(nbpdecVal) && tMaxVal > tMinVal && nbpdecVal > 0) {
+                    const ndecVal = tMaxVal - tMinVal;
+                    const nbinsXVal = Math.floor(ndecVal * nbpdecVal);
+                    xNbins.value = nbinsXVal;
+                    const stepVal = ndecVal / nbinsXVal;
+                    xStep.value = stepVal.toExponential(2);
+                } else {
+                    xNbins.value = '';
+                    xStep.value = '';
+                }
+            }
+
+            // Calcul automat pentru axa Y
+            if (e.target === yMin || e.target === yMax || e.target === yNbins) {
+                const yMinVal = parseFloat(yMin.value);
+                const yMaxVal = parseFloat(yMax.value);
+                const yNbinsVal = parseInt(yNbins.value, 10);
+
+                if (!isNaN(yMinVal) && !isNaN(yMaxVal) && !isNaN(yNbinsVal) && yMaxVal > yMinVal && yNbinsVal > 0) {
+                    const binWidthVal = (yMaxVal - yMinVal) / yNbinsVal;
+                    yBinWidth.value = binWidthVal.toPrecision(4);
+                } else {
+                    yBinWidth.value = '';
+                }
+            }
+        });
+
+        runPlotBtn.addEventListener('click', async () => {
+            if (!validateRequiredFields(plot2dView)) {
+                showToast("Please fill in all required fields.", 'error');
+                return;
+            }
+            const collectedData = {
+                rootFile: document.getElementById('plot-root-file').value,
+                calibrationFile: document.getElementById('plot-calibration-file').value,
+                runs: document.getElementById('plot-runs').value.trim().split(' ').filter(r => r !== ''),
+                detectorName: document.getElementById('plot-detector-name').value,
+                detectorCount: parseInt(document.getElementById('plot-detector-count').value, 10),
+                sourceName: document.getElementById('plot-source-name').value,
+                fitType: document.querySelector('input[name="fit_type_eff"]:checked').value,
+                ps_int_threshold: document.querySelector('input[name="ps_int_tr"]:checked').value,
+                distance: parseFloat(document.getElementById('distance').value),
+                xAxis: {
+                    tMin: parseFloat(xTMin.value),
+                    tMax: parseFloat(xTMax.value),
+                    ndec: parseFloat(xNdec.value),
+                    nbpdec: parseFloat(xNbpdec.value),
+                    nbinsX: parseFloat(xNbins.value),
+                    step: parseFloat(xStep.value)
+                },
+                yAxis: {
+                    yMin: parseFloat(yMin.value),
+                    yMax: parseFloat(yMax.value),
+                    n_bin_y: parseFloat(yNbins.value),
+                    binWidth: parseFloat(yBinWidth.value)
+                }
+            };
+
+            const jsonPayload = JSON.stringify(collectedData, null, 2);
+            showJsonConfirm("Confirmare date Plot 2D?", jsonPayload, () => {
+                // Funcția de descărcare a fișierului
+                const blob = new Blob([jsonPayload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config_2D.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("2D Plot data downloaded successfully!", 'success');
+            });
+        });
+
+        // --- Logică pentru pagina de Cross-Section ---
+        crossSectionView.addEventListener('input', function (e) {
+            if (e.target.classList.contains('required')) {
+                const errorMessage = e.target.nextElementSibling;
+                if (e.target.value.trim()) {
+                    e.target.classList.remove('has-error');
+                    if (errorMessage) {
+                        errorMessage.classList.add('hidden');
+                    }
+                }
+            }
+        });
+
+        runCrossSectionBtn.addEventListener('click', async () => {
+            // Validare câmpuri obligatorii
+            if (!validateRequiredFields(crossSectionView)) {
+                showToast("Please fill in all required fields.", 'error');
+                return;
+            }
+
+            // Colectare date din toate secțiunile
+            const collectedData = {
+                inputFiles: {
+                    histogramFile: document.getElementById('cs-hist-file').value,
+                    histogramName: document.getElementById('cs-hist-name').value,
+                    gammaEnergy: parseFloat(document.getElementById('cs-gamma-energy').value)
+                },
+                fluxInfo: {
+                    fluxFileInput: document.getElementById('cs-flux-file-input').value,
+                    fluxFileOutput: document.getElementById('cs-flux-file-output').value,
+                    histogramFluxName: document.getElementById('cs-flux-hist-name').value
+                },
+                rebinningAndPulses: {
+                    rebinFactor: parseFloat(document.getElementById('cs-rebin-factor').value),
+                    minEntries: parseFloat(document.getElementById('cs-min-entries').value),
+                    nrPulses: parseFloat(document.getElementById('cs-nr-pulses').value)
+                },
+                targetParameters: {
+                    massNumber: parseFloat(document.getElementById('cs-target-mass').value),
+                    density: parseFloat(document.getElementById('cs-target-rho').value),
+                    detectorEfficiency: parseFloat(document.getElementById('cs-target-eff').value)
+                },
+                fitParameters: {
+                    peakSearchSigma: parseFloat(document.getElementById('cs-fit-sigma').value),
+                    peakRatio: parseFloat(document.getElementById('cs-fit-ratio').value),
+                    preFitRange: parseFloat(document.getElementById('cs-fit-prefit').value),
+                    gammaEnergyWindow: parseFloat(document.getElementById('cs-fit-gamma-window').value)
+                },
+                outputFiles: {
+                    pdfName: document.getElementById('cs-output-pdf').value,
+                    rootName: document.getElementById('cs-output-root').value
+                }
+            };
+
+            // Convertim în JSON și cerem confirmarea
+            const jsonPayload = JSON.stringify(collectedData, null, 2);
+            showJsonConfirm("Confirmare date Cross-Section?", jsonPayload, () => {
+                const blob = new Blob([jsonPayload], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config_cs.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Cross-Section data downloaded successfully!", 'success');
+            });
+        });
+
+    </script>
+</body>
+
+</html>
