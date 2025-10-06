@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "PeakIntegratorcopy2.C": "cpp",
+        "PeakIntegrator.C": "cpp",
+        "Plot2D.C": "cpp",
+        "1_CalibrationsD.C": "cpp"
+    }
+}
