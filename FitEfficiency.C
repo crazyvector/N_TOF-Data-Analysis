@@ -89,6 +89,9 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         return;
     }
 
+    double effMin = *std::min_element(efficiencies.begin(), efficiencies.end());
+    double effMax = *std::max_element(efficiencies.begin(), efficiencies.end());
+
     // --- Alegerea modelului ---
     TF1 *effFunc = nullptr;
     std::string funcFormula;
@@ -98,17 +101,24 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         effFunc->SetParNames("p0", "p1", "p2", "p3");
         //effFunc->SetParameters(-10.0, 2.0, -0.1, 0.01);
         // sugestie initializari pentru modelul cu 4 parametri:
-        effFunc->SetParameters(
-            -38.44,   // p0
-            18.21,   // p1
-            -2.922,  // p2
-            0.148   // p3
-        );
+        // effFunc->SetParameters(
+        //     -38.44,   // p0
+        //     18.21,   // p1
+        //     -2.922,  // p2
+        //     0.148   // p3
+        // );
         // limite rezonabile pentru stabilitate:
-        effFunc->SetParLimits(0, -100, 0);   // p0 este negativ pentru eficiențe < 1
-        effFunc->SetParLimits(1, -50, 50);   // p1 poate fi mare (linia in ln-space)
-        effFunc->SetParLimits(2, -20, 20);   // p2
-        effFunc->SetParLimits(3, -2, 2);     // p3 (nu trebuie exagerat)
+        // effFunc->SetParLimits(0, -100, 0);   // p0 este negativ pentru eficiențe < 1
+        // effFunc->SetParLimits(1, -50, 50);   // p1 poate fi mare (linia in ln-space)
+        // effFunc->SetParLimits(2, -20, 20);   // p2
+        // effFunc->SetParLimits(3, -2, 2);     // p3 (nu trebuie exagerat)
+        // Parametri inițiali calculați din date
+        effFunc->SetParameters(TMath::Log(effMin), 1.0, 0.0, 0.0);
+        // Limite rezonabile pentru fit
+        effFunc->SetParLimits(0, TMath::Log(effMin) - 5, TMath::Log(effMax) + 5);
+        effFunc->SetParLimits(1, -10, 10);
+        effFunc->SetParLimits(2, -5, 5);
+        effFunc->SetParLimits(3, -2, 2);
         funcFormula = "ε(E) = exp(p0 + p1*ln(E) + p2*ln²(E) + p3*ln³(E))";
     } else if (modelChoice == 6) {
         effFunc = new TF1("effFunc", efficiencyFitFunc6, 50, 2000, 6);

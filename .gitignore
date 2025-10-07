@@ -1,0 +1,6 @@
+# Ignoră folderele generate automat
+calibrations/
+2D_Plots/
+cross_section/
+efficiency/
+old/

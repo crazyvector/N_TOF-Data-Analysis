@@ -1,6 +1,6 @@
 {
   "rootFile": "/eos/experiment/ntof/processing/official/done/",
-  "calibrationFile": "calibration_parameters.txt",
+  "calibrationFile": "calibrations/Run220099/calibration_parameters.txt",
   "runs": [
     "119910",
     "119911",
