@@ -101,7 +101,6 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
     if (modelChoice == 4) {
         effFunc = new TF1("effFunc", efficiencyFitFunc4, 50, 2000, 4);
         effFunc->SetParNames("p0", "p1", "p2", "p3");
-        //effFunc->SetParameters(-10.0, 2.0, -0.1, 0.01);
         // sugestie initializari pentru modelul cu 4 parametri:
         // effFunc->SetParameters(
         //     -38.44,   // p0
@@ -109,11 +108,6 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         //     -2.922,  // p2
         //     0.148   // p3
         // );
-        // limite rezonabile pentru stabilitate:
-        // effFunc->SetParLimits(0, -100, 0);   // p0 este negativ pentru eficiențe < 1
-        // effFunc->SetParLimits(1, -50, 50);   // p1 poate fi mare (linia in ln-space)
-        // effFunc->SetParLimits(2, -20, 20);   // p2
-        // effFunc->SetParLimits(3, -2, 2);     // p3 (nu trebuie exagerat)
         // Parametri inițiali calculați din date
         effFunc->SetParameters(TMath::Log(effMin), 1.0, 0.0, 0.0);
         // Limite rezonabile pentru fit

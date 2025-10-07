@@ -7,7 +7,7 @@
   "sources": [
     {
       "detector": "LABR",
-      "runName": "calibrations/Eu152Run/Rebin_Eu152_summed_histograms_energy.root",
+      "runName": "calibrations/Run220099/Rebin_Eu152_summed_histograms_energy.root",
       "energies": [
         "121",
         "244",

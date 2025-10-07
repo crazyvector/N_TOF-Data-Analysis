@@ -55,10 +55,11 @@ void SaveCanvasToPDF(TCanvas *canvas, const std::string &pdfFileName, bool &firs
 }
 
 // Integrează aria sub peak folosind background polinomial de grad 1
-// ...existing code...
+// (Comentarii extinse adăugate; codul rămâne identic.)
 
 void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, double xmin_original, double xmax_original, TCanvas *canvas, std::ofstream &outFile)
 {
+    // Desenăm histograma pe canvas (nefolosit pentru calculul numeric, doar vizualizare)
     canvas->cd();
     hist->Draw();
 
@@ -108,9 +109,17 @@ void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, 
         bg_counts += y_bg_est;
     }
 
+    // net_counts = total_counts - bg_counts
     double net_counts = total_counts - bg_counts;
+
+    // Eroarea pentru total_counts: presupunem Poisson -> sigma = sqrt(N)
+    // (observație: dacă ai contezi mici sau preprocesare, poți folosi altă estimare)
     double total_counts_err = sqrt(total_counts);
 
+    // Pentru a calcula eroarea estimării background-ului integrat pe intervalul vârfului,
+    // notăm expresia ariei sub linia de background:
+    //   S_bg = p0 * dx + p1 * (1/2)*(x2^2 - x1^2)
+    // În propagarea erorii avem derivatele față de p0 și p1.
     double dx  = xmax_peak - xmin_peak;
     double dx2 = 0.5*(xmax_peak*xmax_peak - xmin_peak*xmin_peak);
 
@@ -121,10 +130,16 @@ void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, 
         return;
     }
 
-    double var_p0   = r->CovMatrix(0,0);
-    double var_p1   = r->CovMatrix(1,1);
-    double cov_p0p1 = r->CovMatrix(0,1);
+    // Extragem elementele matricei de covarianță de la fit-ul background
+    double var_p0   = r->CovMatrix(0,0); // Var(p0)
+    double var_p1   = r->CovMatrix(1,1); // Var(p1)
+    double cov_p0p1 = r->CovMatrix(0,1); // Cov(p0,p1)
+
+    // Eroarea ariei background-ului: sqrt( (dx)^2 Var(p0) + (dx2)^2 Var(p1) + 2 dx dx2 Cov(p0,p1) )
+    // Derivata S_bg / dp0 = dx,    S_bg / dp1 = dx2
     double bg_counts_err = sqrt( dx*dx*var_p0 + dx2*dx2*var_p1 + 2*dx*dx2*cov_p0p1 );
+
+    // Eroarea net_counts combină eroarea numărătorii (Poisson) cu eroarea background-ului (independentă)
     double net_counts_err   = sqrt(total_counts_err*total_counts_err + bg_counts_err*bg_counts_err);
 
     outFile << xmin_peak << ","
@@ -169,6 +184,9 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
         return {0, 0};
     }
 
+    // Definim funcția Gaussiană + polinom de grad 1 pentru background:
+    //   f(x) = A * exp(-0.5 * ((x - mean)/sigma)^2) + p3 + p4 * x
+    // Parametrii: [0]=A, [1]=mean, [2]=sigma, [3]=p3, [4]=p4
     TF1 *gaus_poly = new TF1("gaus_poly",
                              "[0]*exp(-0.5*((x-[1])/[2])^2) + [3] + [4]*x",
                              xmin, xmax);
@@ -190,6 +208,7 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
         return {0, 0};
     }
 
+    // Extragem parametrii fiti-ului (identici cu notatia din codul original)
     double A     = gaus_poly->GetParameter(0);
     double mean  = gaus_poly->GetParameter(1);
     double sigma = gaus_poly->GetParameter(2);
@@ -205,20 +224,44 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     double integral_max = mean + constant*sigma;
     double binWidth = hist->GetXaxis()->GetBinWidth(1);
 
+    // Calcul numeric al ariei (integrala functiei continue împărțită la lățimea binului)
     double total_integral = gaus_poly->Integral(integral_min, integral_max) / binWidth;
+
+    // Aria sub background (polinom de grad 1):
+    //   S_bg = p3*(x2-x1) + 0.5*p4*(x2^2 - x1^2)
     double bg_integral = ( p3*(integral_max - integral_min)
                        + 0.5*p4*(integral_max*integral_max - integral_min*integral_min) ) / binWidth;
     double area = total_integral - bg_integral;
 
+    // ============================
+    // EROAREA ARIEI GAUSSIENE
+    // ============================
+    // Formula teoretică: pentru gaussiană f(x) = A * exp(-((x-mean)^2)/(2 sigma^2))
+    // aria completă are forma S = A * sigma * sqrt(2*pi)
+    // Derivate:
+    //   dS/dA = sigma * sqrt(2*pi)
+    //   dS/dsigma = A * sqrt(2*pi)
+    // Propagare (includem covarianța între A și sigma):
+    //   (ΔS)^2 = (dS/dA)^2 Var(A) + (dS/dsigma)^2 Var(sigma) + 2 (dS/dA)(dS/dsigma) Cov(A,sigma)
+    // Implementare (folosim elementele matricei de covarianță din fitResult):
     double dA_area = sigma * sqrt(2*M_PI);
     double dsigma_area = A * sqrt(2*M_PI);
-    double varA     = fitResult->CovMatrix(0,0);
-    double varSigma = fitResult->CovMatrix(2,2);
-    double covASigma= fitResult->CovMatrix(0,2);
+    double varA     = fitResult->CovMatrix(0,0); // Var(A)
+    double varSigma = fitResult->CovMatrix(2,2); // Var(sigma)
+    double covASigma= fitResult->CovMatrix(0,2); // Cov(A,sigma)
     double area_err_gauss = sqrt(dA_area*dA_area*varA
                                 + dsigma_area*dsigma_area*varSigma
                                 + 2*dA_area*dsigma_area*covASigma);
 
+    // ============================
+    // EROAREA ARIEI DE BACKGROUND (POLINOM LINEAR)
+    // ============================
+    // Reamintim: S_bg = p3*dx + p4*(1/2)*(x2^2 - x1^2)
+    // Derivate:
+    //   dS_bg/dp3 = dx
+    //   dS_bg/dp4 = 0.5*(x2^2 - x1^2) = dx2
+    // Propagare:
+    //   (ΔS_bg)^2 = (dx)^2 Var(p3) + (dx2)^2 Var(p4) + 2 dx dx2 Cov(p3,p4)
     double dx  = integral_max - integral_min;
     double dx2 = 0.5*(integral_max*integral_max - integral_min*integral_min);
     double varP3     = fitResult->CovMatrix(3,3);
@@ -226,6 +269,7 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     double covP3P4   = fitResult->CovMatrix(3,4);
     double area_err_bg = sqrt(dx*dx*varP3 + dx2*dx2*varP4 + 2*dx*dx2*covP3P4);
 
+    // Eroarea totală a ariei (gauss + background) se combină ca sume de varianțe
     double area_err = sqrt(area_err_gauss*area_err_gauss + area_err_bg*area_err_bg);
 
     outFile << Detector << ","
@@ -260,6 +304,7 @@ void efficiency_calc(double halflife, double dHalflife, double activity, double 
                      double area, double dArea, std::ofstream &outFile, 
                      bool initial_activity, double measure_time, double decay_time)
 {
+    // Lambda (constanta de dezintegrare) și activitatea la momentul măsurării
     double lambda = log(2) / halflife;
     double activity_exp;
     if(initial_activity)
@@ -267,16 +312,46 @@ void efficiency_calc(double halflife, double dHalflife, double activity, double 
     else
         activity_exp = activity * exp(lambda * decay_time);
 
+    // I_gamma = intensitatea în fracție (de exemplu 50% -> 0.5)
     double I_gamma = intensity / 100.0;
+
+    // Eficiența: epsilon = aria vârfului / (A(t) * I_gamma * t_measure)
     double efficiency = area / (activity_exp * I_gamma * measure_time);
 
+    // ============================
+    // PROPAGAREA ERORILOR PENTRU EFICIENȚĂ
+    // ============================
+    // Pentru cantități multiplicative, folosim erori relative.
+    // În cazul nostru: epsilon ∝ area / (activity_exp * I_gamma * measure_time)
+    // Log-diferentiind (sau folosind regula de propagare pentru produse/rapoarte):
+    // (Δε/ε)^2 = (ΔA/A)^2 + (ΔA_exp/A_exp)^2 + (ΔI_gamma/I_gamma)^2 + (t_d * Δλ)^2
+    // Observație: termenul legat de λ apare deoarece A_exp = A0 * exp(-λ t_d) -> derivata logaritmică aduce + t_d Δλ
+
+    // Eroarea relativă a ariei (provine din FitAndSaveToFile)
     double rel_err_area = dArea / area;
+
+    // Eroarea relativă a activității inițiale (A0)
     double rel_err_activity = (dActivity > 0) ? (dActivity / activity) : 0.0;
+
+    // Derivata lui lambda în funcție de T1/2: λ = ln2 / T1/2
+    // dλ = (ln2 / T1/2^2) * dT1/2
     double dLambda = (log(2) / (halflife * halflife)) * dHalflife;
+
+    // Eroarea relativă asociată termenului de dezintegrare exp(-λ t_d) este aproximată ca t_d * dλ
+    // Explicație: A_exp = A0 * exp(-λ t_d) -> ln A_exp = ln A0 - λ t_d
+    // => Δ(ln A_exp) = sqrt( (ΔA0/A0)^2 + (t_d Δλ)^2 )
     double rel_err_T12 = decay_time * dLambda;
+
+    // Combinăm erorile activității (A0) și ale termenului de dezintegrare
     double rel_err_activity_exp = sqrt(rel_err_activity*rel_err_activity + rel_err_T12*rel_err_T12);
+
+    // Eroarea relativă a intensității gamma (I_gamma)
     double rel_err_Igamma   = (dIntensity / intensity);
+
+    // Eroarea totală relativă (presupunem independență între termeni)
     double rel_err_total = sqrt(pow(rel_err_area, 2) + pow(rel_err_activity_exp, 2) + pow(rel_err_Igamma, 2));
+
+    // Eroarea absolută a eficienței
     double eff_err = efficiency * rel_err_total;
 
     outFile << halflife << ","
