@@ -6,13 +6,16 @@
 # runs and detectors, handling different sources and fit types.
 # ====================================================================
 
-# Check if 'jq' is installed and if a configuration file was provided
+# --- Step 1: Check dependencies ---
+# Verify if 'jq' is installed, which is required to read JSON files.
 if ! command -v jq &> /dev/null; then
     echo "ERROR: 'jq' is not installed. Please install it to run this script."
     echo "On Debian/Ubuntu, run: sudo apt-get install jq"
     exit 1
 fi
 
+# --- Step 2: Check for JSON config argument ---
+# The script expects a JSON configuration file as its first argument.
 if [ -z "$1" ]; then
     echo "ERROR: Please provide the JSON configuration file as an argument."
     echo "Example: ./Run_Calibration.sh config.json"
@@ -20,6 +23,8 @@ if [ -z "$1" ]; then
 fi
 
 CONFIG_FILE="$1"
+
+# --- Step 3: Validate JSON file existence ---
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: JSON config file '$CONFIG_FILE' not found!"
     exit 1
@@ -29,23 +34,26 @@ echo "=========================================================="
 echo "Reading configuration from $CONFIG_FILE"
 echo "=========================================================="
 
-# Delete the parameters file before writing
+# --- Step 4: Clear previous parameters ---
+# Ensure calibration_parameters.txt is empty before writing new values.
 > calibration_parameters.txt
 
 # ===============================================
 # 1. Read global and advanced parameters from JSON
 # ===============================================
+
+# Input and output folders
 INPUT_FOLDER=$(jq -r '.inputFolder' "$CONFIG_FILE")
 OUTPUT_FOLDER=$(jq -r '.outputFolder' "$CONFIG_FILE")
 FIT_TYPE=$(jq -r '.fitType' "$CONFIG_FILE")
 
-# Read global histogram parameters (no longer in 'advancedParameters')
+# Histogram parameters
 REBIN_FACTOR=$(jq -r '.rebinFactor' "$CONFIG_FILE")
 XMIN_HIST=$(jq -r '.xminHist' "$CONFIG_FILE")
 XMAX_HIST=$(jq -r '.xmaxHist' "$CONFIG_FILE")
 BIN_WIDTH=$(jq -r '.binWidth' "$CONFIG_FILE")
 
-# Add a trailing slash to the paths, if necessary
+# Ensure paths end with a slash for consistency
 if [[ "$INPUT_FOLDER" != */ ]]; then
     INPUT_FOLDER="$INPUT_FOLDER/"
 fi
@@ -56,21 +64,24 @@ fi
 # ===============================================
 # 2. Iterate through sources in JSON
 # ===============================================
+
 echo "=========================================================="
 echo "Processing sources..."
+
+# Loop over each source defined in the JSON
 for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
     SOURCE_DATA=$(jq -r ".sources[$i]" "$CONFIG_FILE")
 
-    # Extract source-specific data
-    n_runs=$(echo "$SOURCE_DATA" | jq -r '.n_runs')
-    run_names_str=$(echo "$SOURCE_DATA" | jq -r '.run_names | join(" ")')
-    detector=$(echo "$SOURCE_DATA" | jq -r '.detector')
-    ndet=$(echo "$SOURCE_DATA" | jq -r '.ndet')
-    source=$(echo "$SOURCE_DATA" | jq -r '.source')
-    ids_str=$(echo "$SOURCE_DATA" | jq -r '.ids | join(" ")')
+    # --- Extract source-specific information ---
+    n_runs=$(echo "$SOURCE_DATA" | jq -r '.n_runs')                          # Number of runs
+    run_names_str=$(echo "$SOURCE_DATA" | jq -r '.run_names | join(" ")')     # Run names as string
+    detector=$(echo "$SOURCE_DATA" | jq -r '.detector')                       # Detector tree name
+    ndet=$(echo "$SOURCE_DATA" | jq -r '.ndet')                               # Number of detectors
+    source=$(echo "$SOURCE_DATA" | jq -r '.source')                           # Source name
+    ids_str=$(echo "$SOURCE_DATA" | jq -r '.ids | join(" ")')                 # Detector IDs for fitting
 
-    # Read fit parameters specific to each source (no longer global)
-    energies_str=$(echo "$SOURCE_DATA" | jq -r '.energies | join(" ")')
+    # --- Extract fit parameters specific to each source ---
+    energies_str=$(echo "$SOURCE_DATA" | jq -r '.energies | join(" ")')       # Known gamma energies
     FIT_RATIO=$(echo "$SOURCE_DATA" | jq -r '.fitParameters.fitRatio')
     FIT_SIGMA=$(echo "$SOURCE_DATA" | jq -r '.fitParameters.fitSigma')
     PLOT_MIN_RANGE=$(echo "$SOURCE_DATA" | jq -r '.fitParameters.plotMinRange')
@@ -78,7 +89,7 @@ for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
     C1=$(echo "$SOURCE_DATA" | jq -r '.fitParameters.c1')
     C2=$(echo "$SOURCE_DATA" | jq -r '.fitParameters.c2')
 
-    # Use global histogram parameters
+    # --- Use global histogram parameters ---
     rebin_factor="$REBIN_FACTOR"
     ratio="$FIT_RATIO"
     sigma="$FIT_SIGMA"
@@ -90,11 +101,12 @@ for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
     xmax_hist="$XMAX_HIST"
     bin_width="$BIN_WIDTH"
 
-    # Convert space-separated strings to Bash arrays
+    # --- Convert space-separated strings to Bash arrays ---
     read -ra run_names <<< "$run_names_str"
     read -ra ids <<< "$ids_str"
     read -ra energies <<< "$energies_str"
 
+    # --- Print source details for verification ---
     echo "=========================================================="
     echo "Source details:"
     echo "  Runs: ${run_names[*]}"
@@ -106,21 +118,25 @@ for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
     echo "  Rebin factor: $rebin_factor"
     echo "  Fit parameters: Ratio=$ratio, Sigma=$sigma, Range=[$range_xmin, $range_xmax], Constants=[$c1, $c2]"
 
-    # === Calibration 1 ===
+    # ===============================================
+    # Calibration 1: Sum or individual histograms
+    # ===============================================
     echo "==> Running Calibration 1 for all selected runs"
+
+    # Determine the output histogram file name
     histfile="${OUTPUT_FOLDER}Rebin_${source}_summed_histograms.root"
     if [[ "$n_runs" -eq 1 ]]; then
         histfile="${OUTPUT_FOLDER}histograma_${run_names[0]}_${detector}_${source}.root"
     fi
 
-    # Build C++ vector string from Bash array
+    # Convert Bash array to C++ vector string
     run_cpp=$(printf ', "%s"' "${run_names[@]}")
     run_cpp="{${run_cpp:2}}"
 
     if [[ -f "$histfile" ]]; then
         echo "⚠️  Histogram $histfile already exists. Skipping Calibration 1."
     else
-        # Pass input folder path and rebin factor
+        # Build ROOT command for Calibration 1
         ROOT_CMD='.L 1_CalibrationsD.C
         calibrations('"$run_cpp"', "'$detector'", '"$ndet"', "'$source'", "'$INPUT_FOLDER'", "'$OUTPUT_FOLDER'",'"$rebin_factor"', '"$xmin_hist"', '"$xmax_hist"', '"$bin_width"');
         '
@@ -129,7 +145,9 @@ for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
         echo "$ROOT_CMD" | root -l -b
     fi
 
-    # === Calibration 2: Fit Peaks ===
+    # ===============================================
+    # Calibration 2: Fit Peaks for energy calibration
+    # ===============================================
     # Build C++ vector string for detector IDs
     ids_cpp=$(printf ",%s" "${ids[@]}")
     ids_cpp="{${ids_cpp:1}}"
@@ -151,7 +169,7 @@ for i in $(jq -r '.sources | keys[]' "$CONFIG_FILE"); do
 done
 
 # ===============================================
-# 3. Calibration 3: Choose Fit Type
+# Calibration 3: Fit type selection for all detectors
 # ===============================================
 echo "=========================================================="
 echo "==> Fit for detector(s) ${ids[*]} with fit type '$FIT_TYPE'"
@@ -165,7 +183,7 @@ echo "$ROOT_CMD"
 echo "$ROOT_CMD" | root -l -b
 
 # ===============================================
-# 4. Calibration 4: Channel -> Energy for each source
+# Calibration 4: Convert Channel -> Energy for each source
 # ===============================================
 echo "=========================================================="
 echo "==> Running Channel to Energy for all sources"

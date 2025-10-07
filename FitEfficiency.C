@@ -17,9 +17,11 @@
 #include <string>
 #include <stdexcept>
 
-// Test
+// ===========================================================
+// ROOT Macro: Fit efficiency curves for a given detector and source
+// ===========================================================
 
-// --- Modelul cu 6 parametri (nemodificat)
+// --- 6-parameter model (unchanged) ---
 double efficiencyFitFunc6(double *x, double *p) {
     double energy = x[0];
     if (energy <= 0) return 0;
@@ -32,7 +34,7 @@ double efficiencyFitFunc6(double *x, double *p) {
     return TMath::Exp(ln_epsilon);
 }
 
-// --- Modelul cu 4 parametri (nemodificat)
+// --- 4-parameter model (unchanged) ---
 double efficiencyFitFunc4(double *x, double *p) {
     double energy = x[0];
     if (energy <= 0) return 0;
@@ -41,19 +43,24 @@ double efficiencyFitFunc4(double *x, double *p) {
     return TMath::Exp(p[0] + p[1] * lnE + p[2] * lnE * lnE + p[3] * lnE * lnE * lnE);
 }
 
-// !!! NOU: Funcția primește Detectorul și Sursa ca argumente
+// ===========================================================
+// Function: FitEfficiency
+// Fits efficiency curve for a given Detector and Source.
+// modelChoice = 4 or 6, EnergyInterpolation is used for marking a point
+// ===========================================================
 void FitEfficiency(const std::string &Detector, const std::string &Source, int modelChoice, double EnergyInterpolation) {
 
+    // --- File paths ---
     std::string folder = "efficiency/";
-
     std::string pdfOut = folder + "EfficiencyFit_Det=" + Detector + "_Source=" + Source + ".png";
     std::string dataFile = folder + "PeakAreas_Detector=" + Detector + "_Source=" + Source + ".txt";
 
-    gROOT->Reset();
+    gROOT->Reset(); // Reset ROOT to default style
 
+    // --- Read input data ---
     std::ifstream in(dataFile);
     if (!in.is_open()) {
-        std::cerr << "❌ Nu pot deschide fișierul: " << dataFile << std::endl;
+        std::cerr << "❌ Cannot open file: " << dataFile << std::endl;
         return;
     }
 
@@ -61,88 +68,75 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
     std::string line;
     bool firstLine = true;
 
-    // Citirea datelor din fișierul generat de 6_PeakIntegrator.C
+    // Read data (skip header)
     while (std::getline(in, line)) {
-        if (firstLine) { firstLine = false; continue; } // Sărim peste antet
+        if (firstLine) { firstLine = false; continue; }
 
         std::stringstream ss(line);
         std::string item;
         double energy = 0, eff = 0, effErr_ = 0;
 
-        // Coloana 3: Energy, Coloana 26: Efficiency(%), Coloana 27: EfficiencyErr(%)
+        // Columns: 3=Energy, 26=Efficiency(%), 27=EfficiencyErr(%)
         for (int i = 0; i <= 28; ++i) {
             if (!std::getline(ss, item, ',')) break;
-            if (i == 3)  energy = std::stod(item); // Folosim stod pentru conversie
+            if (i == 3)  energy = std::stod(item);
             if (i == 26) eff = std::stod(item);
             if (i == 27) effErr_ = std::stod(item);
         }
 
-        cout << Form("Citit: Energy=%.2f keV, Efficiency=%.4f %%, EffErr=%.4f %%", energy, eff, effErr_) << std::endl;
+        std::cout << Form("Read: Energy=%.2f keV, Efficiency=%.4f %%, EffErr=%.4f %%", energy, eff, effErr_) << std::endl;
 
         if (energy <= 0 || eff <= 0) continue;
         energies.push_back(energy);
-        efficiencies.push_back(eff / 100.0); // Convertim % în fracție
+        efficiencies.push_back(eff / 100.0); // Convert % to fraction
         effErr.push_back(effErr_ / 100.0);
     }
     in.close();
 
     if (energies.empty()) {
-        std::cerr << "❌ Nu s-au găsit puncte valide în fișierul " << dataFile << std::endl;
+        std::cerr << "❌ No valid points found in file " << dataFile << std::endl;
         return;
     }
 
     double effMin = *std::min_element(efficiencies.begin(), efficiencies.end());
     double effMax = *std::max_element(efficiencies.begin(), efficiencies.end());
 
-    // --- Alegerea modelului ---
+    // --- Choose fit model ---
     TF1 *effFunc = nullptr;
-    std::string funcFormula;
 
     if (modelChoice == 4) {
         effFunc = new TF1("effFunc", efficiencyFitFunc4, 50, 2000, 4);
         effFunc->SetParNames("p0", "p1", "p2", "p3");
-        // sugestie initializari pentru modelul cu 4 parametri:
-        // effFunc->SetParameters(
-        //     -38.44,   // p0
-        //     18.21,   // p1
-        //     -2.922,  // p2
-        //     0.148   // p3
-        // );
-        // Parametri inițiali calculați din date
-        effFunc->SetParameters(TMath::Log(effMin), 1.0, 0.0, 0.0);
-        // Limite rezonabile pentru fit
+        effFunc->SetParameters(TMath::Log(effMin), 1.0, 0.0, 0.0); // Initial guesses
         effFunc->SetParLimits(0, TMath::Log(effMin) - 5, TMath::Log(effMax) + 5);
         effFunc->SetParLimits(1, -10, 10);
         effFunc->SetParLimits(2, -5, 5);
         effFunc->SetParLimits(3, -2, 2);
-        funcFormula = "ε(E) = exp(p0 + p1*ln(E) + p2*ln²(E) + p3*ln³(E))";
     } else if (modelChoice == 6) {
         effFunc = new TF1("effFunc", efficiencyFitFunc6, 50, 2000, 6);
         effFunc->SetParNames("p0", "p1", "p2", "p3", "p4", "p5");
-        effFunc->SetParameters(-10.0, 2.0, -0.1, -4.0, 0.2, -0.002);
-        funcFormula = "ln(ε) = y * (2/π) * atan(exp(...)) - 25";
+        effFunc->SetParameters(-10.0, 2.0, -0.1, -4.0, 0.2, -0.002); // Initial guesses
     } else {
-        std::cerr << "❌ Model de fit invalid. Se folosește modelul implicit (4 parametri)." << std::endl;
+        std::cerr << "❌ Invalid model choice. Using default 4-parameter model." << std::endl;
         return;
     }
 
     effFunc->SetLineColor(kRed);
     effFunc->SetLineWidth(2);
 
-    // --- Graficul ---
+    // --- Create graph ---
     TGraphErrors *g = new TGraphErrors(energies.size(), &energies[0], &efficiencies[0], 0, &effErr[0]);
     g->SetTitle(Form("Efficiency Curve for %s (%s);Energy [keV];Efficiency", Source.c_str(), Detector.c_str()));
     g->SetMarkerStyle(20);
     g->SetMarkerColor(kBlue);
 
     TCanvas *c1 = new TCanvas("c1", "Efficiency Fit", 800, 600);
-
     g->Draw("AP");
 
-    // --- Fit-ul ---
+    // --- Perform fit ---
     TFitResultPtr r = g->Fit(effFunc, "RS"); 
 
-    // --- Legendă ---
+    // --- Create legend ---
     TLegend *legend = new TLegend(0.45, 0.75, 0.88, 0.88);
     legend->SetTextSize(0.025);
     legend->SetBorderSize(1);
@@ -151,21 +145,21 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
 
     if (modelChoice == 4) {
         legend->AddEntry(effFunc, "Eff(E) = exp(p0 + p1*ln(E)", "");
-        legend->AddEntry((TObject*)0, " + p2*ln(E)^{2} + p3*ln(E)^{3})", "");}
-    else {
+        legend->AddEntry((TObject*)0, " + p2*ln(E)^{2} + p3*ln(E)^{3})", "");
+    } else {
         legend->AddEntry(effFunc, "ln(eps) = (p0 + p1*ln(E) + p2*ln(E)^{2}) * (2/#pi)", "");
         legend->AddEntry((TObject*)0, " * atan(exp(p3 + p4*ln(E) + p5*ln(E)^{3})) - 25", "");
     }
-
     legend->Draw();
 
+    // --- Check fit validity and annotate ---
     if (r->IsValid()) {
-        std::cout << "✅ Fit reușit!\n📈 Parametrii obținuți:\n";
+        std::cout << "✅ Fit succeeded!\n📈 Fit parameters:\n";
         for (int i = 0; i < effFunc->GetNpar(); ++i) {
             std::cout << Form("  p%d = %.5f +/- %.5f", i, effFunc->GetParameter(i), effFunc->GetParError(i)) << std::endl;
         }
 
-        // --- Interpolare la 1368 keV ---
+        // --- Interpolation at specified energy ---
         double xVal = EnergyInterpolation;
         double yVal = effFunc->Eval(xVal);
 
@@ -188,15 +182,17 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         pt->Draw();
 
     } else {
-        std::cerr << "❌ Fit eșuat." << std::endl;
+        std::cerr << "❌ Fit failed." << std::endl;
     }
 
+    // --- Save output ---
     c1->SaveAs(pdfOut.c_str());
 
-    // Se salvează parametrii de fit într-un fișier, dacă este necesar (adăugare opțională)
+    // Optionally save fit parameters to a file
     std::string name = folder + "efficiency_fit_params.txt";
     std::ofstream fitParamsFile(name);
 
+    // --- Clean up ---
     delete c1;
     delete g;
     delete effFunc;

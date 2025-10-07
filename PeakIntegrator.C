@@ -15,7 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-// Creează recursiv directoare pe baza unui path dat
+// Recursively creates directories based on a given path
 void createDirectories(const std::string &path) {
     std::stringstream ss(path);
     std::string item;
@@ -27,7 +27,7 @@ void createDirectories(const std::string &path) {
     }
 }
 
-// Structură cu datele sursei (energie, ferestre, intensități, activitate etc.)
+// Structure holding source data (energy, windows, intensities, activity, etc.)
 struct SourcePeakData
 {
     std::string name;
@@ -40,7 +40,7 @@ struct SourcePeakData
     double measure_time, decay_time;
 };
 
-// Salvează canvas-ul într-un fișier PDF
+// Saves the canvas to a PDF file
 void SaveCanvasToPDF(TCanvas *canvas, const std::string &pdfFileName, bool &firstPage)
 {
     if (firstPage)
@@ -54,12 +54,11 @@ void SaveCanvasToPDF(TCanvas *canvas, const std::string &pdfFileName, bool &firs
     }
 }
 
-// Integrează aria sub peak folosind background polinomial de grad 1
-// (Comentarii extinse adăugate; codul rămâne identic.)
-
+// Integrates the area under a peak using a first-degree polynomial background
+// (Extended comments added; code remains identical)
 void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, double xmin_original, double xmax_original, TCanvas *canvas, std::ofstream &outFile)
 {
-    // Desenăm histograma pe canvas (nefolosit pentru calculul numeric, doar vizualizare)
+    // Draw the histogram on the canvas (not used for numeric calculation, only for visualization)
     canvas->cd();
     hist->Draw();
 
@@ -80,13 +79,13 @@ void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, 
         y_bg.push_back(hist->GetBinContent(b));
     }
 
-    // Verificare dacă există date nenule pentru background
+    // Check if there are non-zero background data
     bool has_bg_data = false;
     for (double y : y_bg) {
         if (y > 0) { has_bg_data = true; break; }
     }
     if (!has_bg_data) {
-        std::cout << "Warning: Background data is empty in intervalul " << xmin_original << " - " << xmax_original << ".\n";
+        std::cout << "Warning: Background data is empty in the interval " << xmin_original << " - " << xmax_original << ".\n";
         outFile << xmin_peak << "," << xmax_peak << ",NaN,NaN,NaN,NaN,NaN,NaN,";
         return;
     }
@@ -112,34 +111,34 @@ void IntegratePeakWithBackground(TH1 *hist, double xmin_peak, double xmax_peak, 
     // net_counts = total_counts - bg_counts
     double net_counts = total_counts - bg_counts;
 
-    // Eroarea pentru total_counts: presupunem Poisson -> sigma = sqrt(N)
-    // (observație: dacă ai contezi mici sau preprocesare, poți folosi altă estimare)
+    // Error for total_counts: assume Poisson -> sigma = sqrt(N)
+    // (note: for small counts or preprocessing, another estimate can be used)
     double total_counts_err = sqrt(total_counts);
 
-    // Pentru a calcula eroarea estimării background-ului integrat pe intervalul vârfului,
-    // notăm expresia ariei sub linia de background:
+    // To calculate the error of the background estimate integrated over the peak interval,
+    // the expression for the area under the background line is noted:
     //   S_bg = p0 * dx + p1 * (1/2)*(x2^2 - x1^2)
-    // În propagarea erorii avem derivatele față de p0 și p1.
+    // For error propagation, we need derivatives with respect to p0 and p1.
     double dx  = xmax_peak - xmin_peak;
     double dx2 = 0.5*(xmax_peak*xmax_peak - xmin_peak*xmin_peak);
 
-    // Verificare pointer valid pentru fitResult
+    // Check valid pointer for fitResult
     if (!r.Get()) {
         outFile << xmin_peak << "," << xmax_peak << "," << total_counts << "," << bg_counts << "," << net_counts << ","
                 << total_counts_err << ",NaN,NaN,";
         return;
     }
 
-    // Extragem elementele matricei de covarianță de la fit-ul background
+    // Extract covariance matrix elements from the background fit
     double var_p0   = r->CovMatrix(0,0); // Var(p0)
     double var_p1   = r->CovMatrix(1,1); // Var(p1)
     double cov_p0p1 = r->CovMatrix(0,1); // Cov(p0,p1)
 
-    // Eroarea ariei background-ului: sqrt( (dx)^2 Var(p0) + (dx2)^2 Var(p1) + 2 dx dx2 Cov(p0,p1) )
-    // Derivata S_bg / dp0 = dx,    S_bg / dp1 = dx2
+    // Error of background area: sqrt( (dx)^2 Var(p0) + (dx2)^2 Var(p1) + 2 dx dx2 Cov(p0,p1) )
+    // Derivative S_bg / dp0 = dx,    S_bg / dp1 = dx2
     double bg_counts_err = sqrt( dx*dx*var_p0 + dx2*dx2*var_p1 + 2*dx*dx2*cov_p0p1 );
 
-    // Eroarea net_counts combină eroarea numărătorii (Poisson) cu eroarea background-ului (independentă)
+    // Error of net_counts combines numerator error (Poisson) with background error (assumed independent)
     double net_counts_err   = sqrt(total_counts_err*total_counts_err + bg_counts_err*bg_counts_err);
 
     outFile << xmin_peak << ","
@@ -167,7 +166,7 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     hist->GetXaxis()->SetRangeUser(xmin, xmax);
     hist->Draw();
 
-    // Verificare dacă există date nenule în intervalul de fit
+    // Check if there are non-zero data in the fit interval
     int bin_min = hist->FindBin(xmin);
     int bin_max = hist->FindBin(xmax);
     bool has_data = false;
@@ -178,15 +177,15 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
         }
     }
     if (!has_data) {
-        std::cout << "Warning: Histograma este goală în intervalul " << xmin << " - " << xmax << ". Fit-ul va fi sărit.\n";
+        std::cout << "Warning: Histogram is empty in the interval " << xmin << " - " << xmax << ". Fit will be skipped.\n";
         outFile << Detector << "," << id << "," << Source << "," << theoretical_energy << ","
                 << "NaN,NaN,NaN,NaN,NaN,NaN,";
         return {0, 0};
     }
 
-    // Definim funcția Gaussiană + polinom de grad 1 pentru background:
+    // Define Gaussian function + first-degree polynomial for background:
     //   f(x) = A * exp(-0.5 * ((x - mean)/sigma)^2) + p3 + p4 * x
-    // Parametrii: [0]=A, [1]=mean, [2]=sigma, [3]=p3, [4]=p4
+    // Parameters: [0]=A, [1]=mean, [2]=sigma, [3]=p3, [4]=p4
     TF1 *gaus_poly = new TF1("gaus_poly",
                              "[0]*exp(-0.5*((x-[1])/[2])^2) + [3] + [4]*x",
                              xmin, xmax);
@@ -200,15 +199,15 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
 
     TFitResultPtr fitResult = hist->Fit(gaus_poly, "RSQ");
 
-    // Verificare pointer valid pentru fitResult
+    // Check valid pointer for fitResult
     if (!fitResult.Get()) {
-        std::cout << "Warning: Fit-ul nu a returnat rezultat valid pentru detectorul " << id << " la energia " << theoretical_energy << ".\n";
+        std::cout << "Warning: Fit did not return valid result for detector " << id << " at energy " << theoretical_energy << ".\n";
         outFile << Detector << "," << id << "," << Source << "," << theoretical_energy << ","
                 << "NaN,NaN,NaN,NaN,NaN,NaN,";
         return {0, 0};
     }
 
-    // Extragem parametrii fiti-ului (identici cu notatia din codul original)
+    // Extract fit parameters (same notation as original code)
     double A     = gaus_poly->GetParameter(0);
     double mean  = gaus_poly->GetParameter(1);
     double sigma = gaus_poly->GetParameter(2);
@@ -224,26 +223,26 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     double integral_max = mean + constant*sigma;
     double binWidth = hist->GetXaxis()->GetBinWidth(1);
 
-    // Calcul numeric al ariei (integrala functiei continue împărțită la lățimea binului)
+    // Numeric calculation of the area (integral of the continuous function divided by bin width)
     double total_integral = gaus_poly->Integral(integral_min, integral_max) / binWidth;
 
-    // Aria sub background (polinom de grad 1):
+    // Area under background (linear polynomial):
     //   S_bg = p3*(x2-x1) + 0.5*p4*(x2^2 - x1^2)
     double bg_integral = ( p3*(integral_max - integral_min)
                        + 0.5*p4*(integral_max*integral_max - integral_min*integral_min) ) / binWidth;
     double area = total_integral - bg_integral;
 
     // ============================
-    // EROAREA ARIEI GAUSSIENE
+    // GAUSSIAN AREA ERROR
     // ============================
-    // Formula teoretică: pentru gaussiană f(x) = A * exp(-((x-mean)^2)/(2 sigma^2))
-    // aria completă are forma S = A * sigma * sqrt(2*pi)
-    // Derivate:
+    // Theoretical formula: for Gaussian f(x) = A * exp(-((x-mean)^2)/(2 sigma^2))
+    // Full area: S = A * sigma * sqrt(2*pi)
+    // Derivatives:
     //   dS/dA = sigma * sqrt(2*pi)
     //   dS/dsigma = A * sqrt(2*pi)
-    // Propagare (includem covarianța între A și sigma):
+    // Propagation (including covariance between A and sigma):
     //   (ΔS)^2 = (dS/dA)^2 Var(A) + (dS/dsigma)^2 Var(sigma) + 2 (dS/dA)(dS/dsigma) Cov(A,sigma)
-    // Implementare (folosim elementele matricei de covarianță din fitResult):
+    // Implementation (use covariance matrix elements from fitResult):
     double dA_area = sigma * sqrt(2*M_PI);
     double dsigma_area = A * sqrt(2*M_PI);
     double varA     = fitResult->CovMatrix(0,0); // Var(A)
@@ -254,13 +253,13 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
                                 + 2*dA_area*dsigma_area*covASigma);
 
     // ============================
-    // EROAREA ARIEI DE BACKGROUND (POLINOM LINEAR)
+    // BACKGROUND AREA ERROR (LINEAR POLYNOMIAL)
     // ============================
-    // Reamintim: S_bg = p3*dx + p4*(1/2)*(x2^2 - x1^2)
-    // Derivate:
+    // Reminder: S_bg = p3*dx + p4*(1/2)*(x2^2 - x1^2)
+    // Derivatives:
     //   dS_bg/dp3 = dx
     //   dS_bg/dp4 = 0.5*(x2^2 - x1^2) = dx2
-    // Propagare:
+    // Propagation:
     //   (ΔS_bg)^2 = (dx)^2 Var(p3) + (dx2)^2 Var(p4) + 2 dx dx2 Cov(p3,p4)
     double dx  = integral_max - integral_min;
     double dx2 = 0.5*(integral_max*integral_max - integral_min*integral_min);
@@ -269,7 +268,7 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     double covP3P4   = fitResult->CovMatrix(3,4);
     double area_err_bg = sqrt(dx*dx*varP3 + dx2*dx2*varP4 + 2*dx*dx2*covP3P4);
 
-    // Eroarea totală a ariei (gauss + background) se combină ca sume de varianțe
+    // Total area error (gauss + background) combined as sum of variances
     double area_err = sqrt(area_err_gauss*area_err_gauss + area_err_bg*area_err_bg);
 
     outFile << Detector << ","
@@ -298,13 +297,13 @@ std::vector<double> FitAndSaveToFile(TH1 *hist, const std::string &Detector, int
     return {area, area_err};
 }
 
-// Calculează eficiența detectorului cu propagarea erorilor
+// Calculates detector efficiency with error propagation
 void efficiency_calc(double halflife, double dHalflife, double activity, double dActivity, 
                      double intensity, double dIntensity, 
                      double area, double dArea, std::ofstream &outFile, 
                      bool initial_activity, double measure_time, double decay_time)
 {
-    // Lambda (constanta de dezintegrare) și activitatea la momentul măsurării
+    // Lambda (decay constant) and activity at measurement time
     double lambda = log(2) / halflife;
     double activity_exp;
     if(initial_activity)
@@ -312,46 +311,46 @@ void efficiency_calc(double halflife, double dHalflife, double activity, double 
     else
         activity_exp = activity * exp(lambda * decay_time);
 
-    // I_gamma = intensitatea în fracție (de exemplu 50% -> 0.5)
+    // I_gamma = intensity as fraction (e.g. 50% -> 0.5)
     double I_gamma = intensity / 100.0;
 
-    // Eficiența: epsilon = aria vârfului / (A(t) * I_gamma * t_measure)
+    // Efficiency: epsilon = peak area / (A(t) * I_gamma * t_measure)
     double efficiency = area / (activity_exp * I_gamma * measure_time);
 
     // ============================
-    // PROPAGAREA ERORILOR PENTRU EFICIENȚĂ
+    // ERROR PROPAGATION FOR EFFICIENCY
     // ============================
-    // Pentru cantități multiplicative, folosim erori relative.
-    // În cazul nostru: epsilon ∝ area / (activity_exp * I_gamma * measure_time)
-    // Log-diferentiind (sau folosind regula de propagare pentru produse/rapoarte):
+    // For multiplicative quantities, use relative errors.
+    // In our case: epsilon ∝ area / (activity_exp * I_gamma * measure_time)
+    // Log-differentiating (or using propagation rule for products/ratios):
     // (Δε/ε)^2 = (ΔA/A)^2 + (ΔA_exp/A_exp)^2 + (ΔI_gamma/I_gamma)^2 + (t_d * Δλ)^2
-    // Observație: termenul legat de λ apare deoarece A_exp = A0 * exp(-λ t_d) -> derivata logaritmică aduce + t_d Δλ
+    // Note: the λ term appears because A_exp = A0 * exp(-λ t_d) -> logarithmic derivative gives + t_d Δλ
 
-    // Eroarea relativă a ariei (provine din FitAndSaveToFile)
+    // Relative error of area (from FitAndSaveToFile)
     double rel_err_area = dArea / area;
 
-    // Eroarea relativă a activității inițiale (A0)
+    // Relative error of initial activity (A0)
     double rel_err_activity = (dActivity > 0) ? (dActivity / activity) : 0.0;
 
-    // Derivata lui lambda în funcție de T1/2: λ = ln2 / T1/2
+    // Derivative of lambda with respect to T1/2: λ = ln2 / T1/2
     // dλ = (ln2 / T1/2^2) * dT1/2
     double dLambda = (log(2) / (halflife * halflife)) * dHalflife;
 
-    // Eroarea relativă asociată termenului de dezintegrare exp(-λ t_d) este aproximată ca t_d * dλ
-    // Explicație: A_exp = A0 * exp(-λ t_d) -> ln A_exp = ln A0 - λ t_d
+    // Relative error associated with decay term exp(-λ t_d) approximated as t_d * dλ
+    // Explanation: A_exp = A0 * exp(-λ t_d) -> ln A_exp = ln A0 - λ t_d
     // => Δ(ln A_exp) = sqrt( (ΔA0/A0)^2 + (t_d Δλ)^2 )
     double rel_err_T12 = decay_time * dLambda;
 
-    // Combinăm erorile activității (A0) și ale termenului de dezintegrare
+    // Combine errors of activity (A0) and decay term
     double rel_err_activity_exp = sqrt(rel_err_activity*rel_err_activity + rel_err_T12*rel_err_T12);
 
-    // Eroarea relativă a intensității gamma (I_gamma)
+    // Relative error of gamma intensity (I_gamma)
     double rel_err_Igamma   = (dIntensity / intensity);
 
-    // Eroarea totală relativă (presupunem independență între termeni)
+    // Total relative error (assume independence)
     double rel_err_total = sqrt(pow(rel_err_area, 2) + pow(rel_err_activity_exp, 2) + pow(rel_err_Igamma, 2));
 
-    // Eroarea absolută a eficienței
+    // Absolute error of efficiency
     double eff_err = efficiency * rel_err_total;
 
     outFile << halflife << ","
@@ -366,7 +365,7 @@ void efficiency_calc(double halflife, double dHalflife, double activity, double 
         << eff_err * 100 << std::endl;
 }
 
-// Analizează peak-urile dintr-un fișier ROOT și calculează eficiența detectorului
+// Analyzes peaks from a ROOT file and calculates detector efficiency
 void peak_analysis(const std::string &rootFileName, const std::string &Detector, const std::string &Source, const std::vector<int> &ids, const SourcePeakData &sourceData)
 {
     TFile *input_file = TFile::Open(rootFileName.c_str(), "READ");
@@ -383,7 +382,7 @@ void peak_analysis(const std::string &rootFileName, const std::string &Detector,
     std::map<int, std::vector<double>> all_resolutions;
 
     if (sourceData.energies.empty() || sourceData.energies.size() != sourceData.search_windows.size()) {
-        std::cerr << "Eroare: Datele sursei sunt invalide sau lipsesc (Energies/Search Windows)." << std::endl;
+        std::cerr << "Error: Source data is invalid or missing (Energies/Search Windows)." << std::endl;
         input_file->Close();
         return;
     }
@@ -407,7 +406,7 @@ void peak_analysis(const std::string &rootFileName, const std::string &Detector,
         histo_channels[i] = (TH1F *)input_file->Get(name);
         if (!histo_channels[i])
         {
-            std::cout << "Missing histogram for det " << i << ". Continuăm." << std::endl;
+            std::cout << "Missing histogram for det " << i << ". Continuing." << std::endl;
             continue;
         }
 
@@ -440,5 +439,5 @@ void peak_analysis(const std::string &rootFileName, const std::string &Detector,
     canvas->Print((pdfFileName + "]").c_str());
     input_file->Close();
 
-    std::cout << "✅ Rezultatele au fost salvate in: " << outputFileName << std::endl;
+    std::cout << "✅ Results have been saved in: " << outputFileName << std::endl;
 }
