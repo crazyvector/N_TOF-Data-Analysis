@@ -17,6 +17,8 @@
 #include <string>
 #include <stdexcept>
 
+// Test
+
 // --- Modelul cu 6 parametri (nemodificat)
 double efficiencyFitFunc6(double *x, double *p) {
     double energy = x[0];
