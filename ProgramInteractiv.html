@@ -360,12 +360,17 @@
                             class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Dedicated (7.5e+12) </span></label>
                     <label class="flex items-center"><input type="radio" name="ps_int_tr" value="3.5e+12"
                             class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Parasitic (3.5e+12)</span></label>
+                    <label class="flex items-center"><input type="radio" name="ps_int_tr" value="" id="custom_radio"
+                            class="h-4 w-4 text-blue-600"><span class="ml-2 text-sm mr-2">Value:</span>
+                            <input type="number" id="custom_input" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border rounded-md shadow-sm" placeholder="Enter value"></label>
                 </div>
                 <div class="flex space-x-4 mb-6">
                     <label class="flex items-center"><input type="radio" name="condition" value="<=" checked
                             class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm"> Less than "<=" </span></label>
                     <label class="flex items-center"><input type="radio" name="condition" value=">="
                             class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm"> More than ">=" </span></label>
+                    <label class="flex items-center"><input type="radio" name="condition" value="/"
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm"> No condition </span></label>
                 </div>
             </div>
 
@@ -1447,6 +1452,16 @@
             } else {
                 distanceInput.value = "";
             }
+        });
+
+        const customRadio = document.getElementById('custom_radio');
+        const customInput = document.getElementById('custom_input');
+
+        customInput.addEventListener('input', () => {
+            // Selectează automat radio-ul "custom"
+            customRadio.checked = true;
+            // Setează valoarea radio-ului la ce introduce utilizatorul
+            customRadio.value = customInput.value;
         });
 
         plot2dView.addEventListener('input', function (e) {
