@@ -127,6 +127,61 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
         chain->Add(FName);  // add the file to TChain
     }
 
+   //-------------------------------------------------------
+    // Find last (maximum) BunchNumber that actually has data
+    // for each run in the chain
+    //-------------------------------------------------------
+    double totalLastBunchSum = 0;
+    std::vector<double> lastBunchPerRun;
+
+    if (chain->GetBranch("BunchNumber")) {
+        TObjArray *fileElements = chain->GetListOfFiles();
+
+        std::ofstream summary("maxBunchSummary.txt");
+        summary << "Run\tLastBunchNumber\n";
+
+        for (int i = 0; i < fileElements->GetEntries(); ++i) {
+            TChainElement *element = (TChainElement*)fileElements->At(i);
+            TString fname = element->GetTitle();
+            TFile file(fname, "READ");
+
+            if (file.IsZombie()) {
+                std::cerr << "⚠️  Cannot open file: " << fname << std::endl;
+                continue;
+            }
+
+            TTree *t = (TTree*)file.Get(Detector); // same tree name as in TChain
+            if (!t || !t->GetBranch("BunchNumber")) {
+                std::cerr << "⚠️  Branch 'BunchNumber' not found in " << fname << std::endl;
+                continue;
+            }
+
+            // Get maximum value that actually exists in the data
+            double lastBunch = t->GetMaximum("BunchNumber");
+
+            std::cout << "Run " << i+1 << " (" << fname << ") → "
+                    << "Last Bunch with entries = " << lastBunch << std::endl;
+
+            summary << "run" << i+1 << "\t" << lastBunch << "\n";
+
+            lastBunchPerRun.push_back(lastBunch);
+            totalLastBunchSum += lastBunch;
+
+            file.Close();
+        }
+
+        summary << "====================================\n";
+        summary << "Total sum of last bunch numbers = " << totalLastBunchSum << "\n";
+        summary.close();
+
+        std::cout << "====================================\n";
+        std::cout << "Total sum of last bunch numbers = " << totalLastBunchSum << std::endl;
+        std::cout << "Summary saved in: maxBunchSummary.txt" << std::endl;
+        std::cout << "====================================\n";
+    } else {
+        std::cerr << "⚠️  Warning: Branch 'BunchNumber' not found in TChain.\n";
+    }
+
     //-------------------------------------------------------
     // Load calibration parameters from file
     //-------------------------------------------------------
@@ -169,7 +224,6 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
     // Use a map to store histograms for each detector
     //-------------------------------------------------------
     std::map<int, TH2F *> hist;
-    float trigger;
 
     //-------------------------------------------------------
     // Loop over all events
@@ -195,8 +249,6 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
             {
                 if (PsInt >= PsInt_threshold) continue;
             }
-
-        trigger += 1;
 
         //---------------------------------------------------
         // Convert channel to gamma energy using calibration
@@ -231,8 +283,6 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
     }
 
     std::cout << "Processing: 100% (" << nEntries << "/" << nEntries << ")\n" << std::endl;
-
-    cout << "Total triggers processed: " << trigger << std::endl;
 
     //-------------------------------------------------------
     // Write histograms to output ROOT file
