@@ -5,3 +5,9 @@ cross_section/
 efficiency/
 Old/
 config_files/
+
+# Ignoră fișierele temporare și de backup
+Plot2D_C_ACLiC_dict_rdict.pcm
+Plot2D_C.d
+Plot2D_C.so
+*.root
