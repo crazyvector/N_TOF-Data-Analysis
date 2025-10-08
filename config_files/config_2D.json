@@ -1,6 +1,6 @@
 {
   "rootFile": "/eos/experiment/ntof/processing/official/done/",
-  "calibrationFile": "calibrations/Run220099/calibration_parameters.txt",
+  "calibrationFile": "calibrations/Run119908/calibration_parameters.txt",
   "runs": [
     "119910",
     "119911",
@@ -45,14 +45,16 @@
     "119974",
     "119975",
     "119976",
-    "119977"
+    "119977",
+    "119981"
   ],
   "detectorName": "LABR",
-  "detectorCount": 12,
+  "detectorCount": 8,
   "sourceName": "Mg24",
   "fitType": "linear",
   "ps_int_threshold": "7.5e+12",
-  "distance": 182,
+  "condition": ">=",
+  "distance": 185,
   "xAxis": {
     "tMin": -3,
     "tMax": 7,

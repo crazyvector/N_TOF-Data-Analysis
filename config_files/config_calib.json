@@ -1,6 +1,6 @@
 {
   "inputFolder": "/eos/experiment/ntof/processing/official/done/",
-  "outputFolder": "calibrations/",
+  "outputFolder": "calibrations/Run119908",
   "rebinFactor": 1,
   "xminHist": 0,
   "xmaxHist": 16000,

@@ -357,9 +357,15 @@
                 <h3 class="text-xl font-semibold mb-4">Pulse Threshold</h3>
                 <div class="flex space-x-4 mb-6">
                     <label class="flex items-center"><input type="radio" name="ps_int_tr" value="7.5e+12" checked
-                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Dedicated</span></label>
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Dedicated (7.5e+12) </span></label>
                     <label class="flex items-center"><input type="radio" name="ps_int_tr" value="3.5e+12"
-                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Parasitic</span></label>
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm">Parasitic (3.5e+12)</span></label>
+                </div>
+                <div class="flex space-x-4 mb-6">
+                    <label class="flex items-center"><input type="radio" name="condition" value="<=" checked
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm"> Less than "<=" </span></label>
+                    <label class="flex items-center"><input type="radio" name="condition" value=">="
+                            class="h-4 w-4 text-blue-600"> <span class="ml-2 text-sm"> More than ">=" </span></label>
                 </div>
             </div>
 
@@ -1508,7 +1514,8 @@
                 sourceName: document.getElementById('plot-source-name').value,
                 fitType: document.querySelector('input[name="fit_type_eff"]:checked').value,
                 ps_int_threshold: document.querySelector('input[name="ps_int_tr"]:checked').value,
-                distance: parseFloat(document.getElementById('distance').value),
+                condition: document.querySelector('input[name="condition"]:checked').value,
+                distance: Number(document.getElementById('distance').value),
                 xAxis: {
                     tMin: parseFloat(xTMin.value),
                     tMax: parseFloat(xTMax.value),

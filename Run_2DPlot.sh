@@ -49,6 +49,7 @@ DETECTOR_COUNT=$(jq -r '.detectorCount' "$CONFIG_FILE") # number of detectors
 SOURCE=$(jq -r '.sourceName' "$CONFIG_FILE")           # source name
 FIT_TYPE=$(jq -r '.fitType' "$CONFIG_FILE")            # type of calibration fit
 PS_INT_THRESHOLD=$(jq -r '.ps_int_threshold' "$CONFIG_FILE") # pulse intensity threshold
+CONDITION=$(jq -r '.condition' "$CONFIG_FILE")         # condition for pulse intensity filtering
 DISTANCE=$(jq -r '.distance' "$CONFIG_FILE")           # distance for neutron energy calculation
 
 # X Axis parameters
@@ -98,8 +99,8 @@ echo "Y Axis: YMIN=$YMIN, YMAX=$YMAX, NBINY=$NBINY, BINWIDTH=$BINWIDTH"
 # 2. Call the plot2D() function with all parameters extracted from JSON.
 # 3. The runs array is formatted into a ROOT-style { "run1", "run2", ... }.
 # --------------------------------------------------------------------
-ROOT_CMD=".L Plot2D.C+
-plot2D({$(printf '"%s",' "${RUNS_ARRAY[@]}" | sed 's/,$//')}, \"$DETECTOR\", $DETECTOR_COUNT, \"$SOURCE\", \"$FIT_TYPE\", $TMIN, $TMAX, $NDEC, $NBPDEC, $NBINSX, $STEP, $YMIN, $YMAX, $NBINY, $BINWIDTH, \"$CALIB_FILE\", \"$ROOT_FOLDER\", $PS_INT_THRESHOLD, $DISTANCE);"
+ROOT_CMD=".L Plot2D.C
+plot2D({$(printf '"%s",' "${RUNS_ARRAY[@]}" | sed 's/,$//')}, \"$DETECTOR\", $DETECTOR_COUNT, \"$SOURCE\", \"$FIT_TYPE\", $TMIN, $TMAX, $NDEC, $NBPDEC, $NBINSX, $STEP, $YMIN, $YMAX, $NBINY, $BINWIDTH, \"$CALIB_FILE\", \"$ROOT_FOLDER\", $PS_INT_THRESHOLD, $DISTANCE, \"$CONDITION\");"
 
 # Print the ROOT command before execution
 echo "Executing ROOT command:"

@@ -103,7 +103,7 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
             int T_MIN, int T_MAX, int ndec, int N_BPDEC, int nbinsX, double step,
             float ymin, float ymax, int n_bin_y, double binWidth,
             const std::string &calibrationFile, const std::string &rootFolder,
-            double PsInt_threshold, double distance)
+            double PsInt_threshold, double distance, const std::string &condition)
 {
     // Create output folder for histograms
     std::string folder = "2D_Plots/";
@@ -169,6 +169,7 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
     // Use a map to store histograms for each detector
     //-------------------------------------------------------
     std::map<int, TH2F *> hist;
+    float trigger;
 
     //-------------------------------------------------------
     // Loop over all events
@@ -182,9 +183,20 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
         chain->GetEntry(i_entry); // load event
 
         //---------------------------------------------------
-        // Skip events with pulse intensity below threshold
+        // Skip events with pulse intensity below/over threshold
         //---------------------------------------------------
-        if (PsInt <= PsInt_threshold) continue;
+        if(PsInt <= 2e12) continue;
+
+        if(condition == "<=") 
+            {
+                if (PsInt <= PsInt_threshold) continue;
+            }
+        else if(condition == ">=")
+            {
+                if (PsInt >= PsInt_threshold) continue;
+            }
+
+        trigger += 1;
 
         //---------------------------------------------------
         // Convert channel to gamma energy using calibration
@@ -219,6 +231,8 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
     }
 
     std::cout << "Processing: 100% (" << nEntries << "/" << nEntries << ")\n" << std::endl;
+
+    cout << "Total triggers processed: " << trigger << std::endl;
 
     //-------------------------------------------------------
     // Write histograms to output ROOT file

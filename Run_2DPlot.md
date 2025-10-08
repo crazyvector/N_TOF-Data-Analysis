@@ -83,7 +83,8 @@ DETECTOR_COUNT=$(jq -r '.detectorCount' "$CONFIG_FILE")
 - **DETECTOR_COUNT:** Total number of detectors.
 - **SOURCE:** Source name.
 - **FIT_TYPE:** Type of energy calibration fit.
-- **PS_INT_THRESHOLD:** Minimum pulse intensity to consider.
+- **PS_INT_THRESHOLD:** Minimum/Maximum pulse intensity to consider.
+- **CONDITION:** Condition for pulse intensity to consider
 - **DISTANCE:** Distance parameter for neutron energy calculation.
 - **X/Y axis parameters:** Binning and range for histograms.
 - **RUNS_ARRAY:** List of run numbers to include.
