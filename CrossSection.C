@@ -182,7 +182,8 @@ void CrossSection(TString inputFileName, TString histogramName,
 
         // --- Gaussian area and uncertainty ---
         const double SQRT2PI = sqrt(2.0 * TMath::Pi());
-        double area = A * sigmaG * SQRT2PI;
+        // double area = A * sigmaG * SQRT2PI;
+        double area = fitFunc->Integral(fitLow, fitHigh);
 
         double varA = pow(fit->ParError(0), 2);
         double varS = pow(fit->ParError(2), 2);
@@ -204,8 +205,9 @@ void CrossSection(TString inputFileName, TString histogramName,
             double E_low = hFlux->GetXaxis()->GetBinLowEdge(jx);
             double E_high = hFlux->GetXaxis()->GetBinUpEdge(jx);
             if (E_low >= E_n_low && E_high <= E_n_high) {
-                neutronFlux += hFlux->GetBinContent(jx);
-                fluxVar += pow(hFlux->GetBinError(jx), 2);
+                double binWidth = E_high - E_low;
+                neutronFlux += hFlux->GetBinContent(jx) * binWidth;
+                fluxVar += pow(hFlux->GetBinError(jx) * binWidth, 2);
             }
         }
         double neutronFluxErr = (neutronFlux > 0) ? sqrt(fluxVar) : 0.0;
@@ -218,7 +220,7 @@ void CrossSection(TString inputFileName, TString histogramName,
         // --- Cross section constants ---
         double amu = 1.66e-24;  // atomic mass unit [g]
         double barn = 1e-24;   // cm^2
-        double CONST = (amu * massNr) / (eff * rho) * (1.0 / (4.0 * TMath::Pi()));
+        double CONST = (amu * massNr) / (eff * rho) * (1.0 / (4.0 * TMath::Pi()));  // cm^2
         CONST /= barn; // convert to barns
 
         // --- Cross section calculation ---
@@ -239,9 +241,21 @@ void CrossSection(TString inputFileName, TString histogramName,
         Eerr.push_back(0.5*bin_width);
         sigmaErr.push_back(xsErr_total);
 
+        projY->GetXaxis()->SetRangeUser(fitLow, fitHigh);
+
         // --- Display progress ---
         projY->Draw();
         fitFunc->Draw("same");
+
+        TPaveText *pt = new TPaveText(0.15, 0.7, 0.5, 0.9, "NDC");
+        pt->SetTextSize(0.03);
+        pt->SetFillColor(0);
+        pt->SetBorderSize(1);
+        pt->AddText(Form("Mean = %.2f ± %.2f keV", mean, fit->ParError(1)));
+        pt->AddText(Form("Sigma = %.2f ± %.2f keV", sigmaG, fit->ParError(2)));
+        pt->AddText(Form("Area = %.1f ± %.1f", area, areaErr));
+        pt->Draw();
+
         gPad->Update();
         SaveCanvasToPDF((TCanvas*)gPad, pdfName, firstPage);
 

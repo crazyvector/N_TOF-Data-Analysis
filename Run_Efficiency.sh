@@ -171,6 +171,12 @@ if [ ${#OUTPUT_FILES[@]} -gt 1 ]; then
 FitEfficiency(\"$DETECTOR\", \"Combined\", $FIT_MODEL, $ENERGY_INTERPOLATION);"
     echo "$ROOT_CMD_2"
     echo "$ROOT_CMD_2" | root -l -b
+    elif [ ${#OUTPUT_FILES[@]} -eq 1 ]; then
+    # If only one source, run FitEfficiency.C directly on its file
+    ROOT_CMD_2=".L FitEfficiency.C
+FitEfficiency(\"$DETECTOR\", \"$SOURCE_NAME\", $FIT_MODEL, $ENERGY_INTERPOLATION);"
+    echo "$ROOT_CMD_2"
+    echo "$ROOT_CMD_2" | root -l -b
 fi
 
 # ----------------------------------------------------

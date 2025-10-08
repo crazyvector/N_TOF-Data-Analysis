@@ -45,7 +45,7 @@ echo "=========================================================="
 ROOT_FOLDER=$(jq -r '.rootFile' "$CONFIG_FILE")        # folder containing ROOT files
 CALIB_FILE=$(jq -r '.calibrationFile' "$CONFIG_FILE")  # calibration file path
 DETECTOR=$(jq -r '.detectorName' "$CONFIG_FILE")       # detector tree name
-DETECTOR_COUNT=$(jq -r '.detectorCount' "$CONFIG_FILE")# number of detectors
+DETECTOR_COUNT=$(jq -r '.detectorCount' "$CONFIG_FILE") # number of detectors
 SOURCE=$(jq -r '.sourceName' "$CONFIG_FILE")           # source name
 FIT_TYPE=$(jq -r '.fitType' "$CONFIG_FILE")            # type of calibration fit
 PS_INT_THRESHOLD=$(jq -r '.ps_int_threshold' "$CONFIG_FILE") # pulse intensity threshold

@@ -1,13 +1,47 @@
 {
   "modelChoice": 4,
-  "energyInterpolation": 1368,
+  "energyInterpolation": 1778,
   "ids": [
     8
   ],
   "sources": [
     {
       "detector": "LABR",
-      "runName": "calibrations/Run220099/Rebin_Eu152_summed_histograms_energy.root",
+      "runName": "calibrations/Run220099/histograma_run220099_LABR_Y88_energy.root",
+      "energies": [
+        "898",
+        "1836"
+      ],
+      "search_windows": [
+        "800",
+        "1000",
+        "1700",
+        "1950"
+      ],
+      "sigma_guess": [
+        "5.0",
+        "10.0"
+      ],
+      "intensity": [
+        "93.7",
+        "99.2"
+      ],
+      "dIntensity": [
+        "0.3",
+        "0.3"
+      ],
+      "halflife": "9212486.4",
+      "dHalflife": "1728",
+      "activity": "268000",
+      "dActivity": "13000",
+      "initial_activity": false,
+      "measure_time": "353.7",
+      "decay_time": "4434900",
+      "source": "Y88"
+    },
+    {
+      "detector": "LABR",
+      "runName": "calibrations/Eu152Run/Rebin_Eu152_summed_histograms_energy.root",
       "energies": [
         "121",
         "244",
@@ -50,40 +84,6 @@
       "measure_time": "3497.1",
       "decay_time": "182186700",
       "source": "Eu152"
-    },
-    {
-      "detector": "LABR",
-      "runName": "calibrations/Run220099/histograma_run220099_LABR_Y88_energy.root",
-      "energies": [
-        "898",
-        "1836"
-      ],
-      "search_windows": [
-        "800",
-        "1000",
-        "1700",
-        "1950"
-      ],
-      "sigma_guess": [
-        "5.0",
-        "10.0"
-      ],
-      "intensity": [
-        "93.7",
-        "99.2"
-      ],
-      "dIntensity": [
-        "0.3",
-        "0.3"
-      ],
-      "halflife": "9212486.4",
-      "dHalflife": "1728",
-      "activity": "268000",
-      "dActivity": "13000",
-      "initial_activity": false,
-      "measure_time": "353.7",
-      "decay_time": "4434900",
-      "source": "Y88"
     }
   ]
 }

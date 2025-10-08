@@ -2,20 +2,12 @@
   "modelChoice": 4,
   "energyInterpolation": 1368,
   "ids": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    7,
-    8,
-    11,
-    12
+    5
   ],
   "sources": [
     {
       "detector": "LABR",
-      "runName": "calibrations/Run220099/histograma_run220099_LABR_Y88_energy.root",
+      "runName": "calibrations/histograma_run119908_LABR_Y88_energy.root",
       "energies": [
         "898",
         "1836"
@@ -40,11 +32,11 @@
       ],
       "halflife": "9212486.4",
       "dHalflife": "1728",
-      "activity": "268000",
-      "dActivity": "13000",
-      "initial_activity": false,
-      "measure_time": "353.7",
-      "decay_time": "4434900",
+      "activity": "500000",
+      "dActivity": "0",
+      "initial_activity": true,
+      "measure_time": "145.4",
+      "decay_time": "53686800",
       "source": "Y88"
     }
   ]

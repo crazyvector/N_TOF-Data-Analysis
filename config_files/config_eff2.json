@@ -1,55 +1,43 @@
 {
   "modelChoice": 4,
-  "energyInterpolation": 1368,
+  "energyInterpolation": 1778,
   "ids": [
     8
   ],
   "sources": [
     {
       "detector": "LABR",
-      "runName": "calibrations/Eu152Run/Rebin_Eu152_summed_histograms_energy.root",
+      "runName": "calibrations/Run220099/histograma_run220099_LABR_Y88_energy.root",
       "energies": [
-        "121",
-        "244",
-        "344",
-        "964"
+        "898",
+        "1836"
       ],
       "search_windows": [
-        "105",
-        "160",
-        "200",
-        "280",
-        "280",
-        "420",
-        "900",
-        "1040"
+        "800",
+        "1000",
+        "1700",
+        "1950"
       ],
       "sigma_guess": [
-        "3.0",
         "5.0",
-        "5.0",
-        "5.0"
+        "10.0"
       ],
       "intensity": [
-        "28.53",
-        "7.55",
-        "26.59",
-        "14.51"
+        "93.7",
+        "99.2"
       ],
       "dIntensity": [
-        "0.16",
-        "0.04",
-        "0.2",
-        "0.07"
+        "0.3",
+        "0.3"
       ],
-      "halflife": "426564079.2",
-      "dHalflife": "284018.39999999997",
-      "activity": "37980",
-      "dActivity": "0",
-      "initial_activity": true,
-      "measure_time": "3497.1",
-      "decay_time": "182186700",
-      "source": "Eu152"
+      "halflife": "9212486.4",
+      "dHalflife": "1728",
+      "activity": "268000",
+      "dActivity": "13000",
+      "initial_activity": false,
+      "measure_time": "353.7",
+      "decay_time": "4434900",
+      "source": "Y88"
     }
   ]
 }

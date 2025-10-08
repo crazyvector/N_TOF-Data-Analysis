@@ -178,7 +178,7 @@ void FitEfficiency(const std::string &Detector, const std::string &Source, int m
         pt->SetFillStyle(0);
         pt->SetBorderSize(0);
         pt->AddText(Form("Interpolated at %.0f keV:", xVal));
-        pt->AddText(Form("Eff = %.4f (%.4f %%)", yVal, yVal * 100));
+        pt->AddText(Form("Eff = %.6f (%.4f %%)", yVal, yVal * 100));
         pt->Draw();
 
     } else {
