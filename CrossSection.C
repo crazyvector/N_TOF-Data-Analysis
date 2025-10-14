@@ -101,13 +101,16 @@ void CrossSection(TString inputFileName, TString histogramName,
     // --- Loop over neutron energy bins ---
     for (int ix = 1; ix <= nBinsX; ix += rebinFactor)
     {
+        // neutron energy in eV
+        //gamma energy in KeV
+        //interest gamma energy in KeV
         double E_n_low = h2->GetXaxis()->GetBinLowEdge(ix);
         double E_n_high = h2->GetXaxis()->GetBinUpEdge(std::min(ix + rebinFactor - 1, nBinsX));
         double Ecenter = 0.5 * (E_n_low + E_n_high);
         double bin_width = E_n_high - E_n_low;
 
         std::cout << "Neutron Energy = " << Ecenter / 1e3 << " KeV"
-                  << ", interest gamma energy = " << interestGammaEnergy << " keV" << std::endl;
+                  << ", interest gamma energy = " << interestGammaEnergy << " KeV" << std::endl;
 
         if (Ecenter < interestGammaEnergy * 1e3) continue;
 
@@ -118,7 +121,7 @@ void CrossSection(TString inputFileName, TString histogramName,
 
         // --- Project gamma spectrum for this super-bin ---
         TH1D *projY = h2->ProjectionY(Form("projY_%d", ix), ix, std::min(ix + rebinFactor - 1, nBinsX));
-        projY->GetXaxis()->SetRangeUser(interestGammaEnergy * (1.0 - gammaWindow), interestGammaEnergy * (1.0 + gammaWindow));
+        projY->GetXaxis()->SetRangeUser(interestGammaEnergy * (1.0 - 0.5), interestGammaEnergy * (1.0 + 0.5));
 
         if (projY->GetEntries() < minEntries) { // skip empty bins
             delete projY;
@@ -152,8 +155,9 @@ void CrossSection(TString inputFileName, TString histogramName,
 
         double xMinHist = projY->GetXaxis()->GetXmin();
         double xMaxHist = projY->GetXaxis()->GetXmax();
-        double fitLow = std::max(xMinHist, mean_pre - 4 * sigma_pre);
-        double fitHigh = std::min(xMaxHist, mean_pre + 4 * sigma_pre);
+        double fitLow = std::max(xMinHist, mean_pre - 3 * sigma_pre);
+        double fitHigh = std::min(xMaxHist, mean_pre + 3 * sigma_pre);
+        cout << "Fit range: [" << fitLow << ", " << fitHigh << "]" << endl;
 
         if (fitHigh <= fitLow) {
             std::cout << "Invalid fit range. Skipping bin." << std::endl;
@@ -182,8 +186,9 @@ void CrossSection(TString inputFileName, TString histogramName,
 
         // --- Gaussian area and uncertainty ---
         const double SQRT2PI = sqrt(2.0 * TMath::Pi());
-        // double area = A * sigmaG * SQRT2PI;
-        double area = fitFunc->Integral(fitLow, fitHigh);
+        double binwidth = projY->GetBinWidth(1); // assume uniform bin width
+        double area = A * sigmaG * SQRT2PI / binwidth;
+        // double area = fitFunc->Integral(fitLow, fitHigh);
 
         double varA = pow(fit->ParError(0), 2);
         double varS = pow(fit->ParError(2), 2);
@@ -199,18 +204,22 @@ void CrossSection(TString inputFileName, TString histogramName,
         std::cout << "Gaussian area = " << area << " ± " << areaErr << std::endl;
 
         // --- Integrate neutron flux for this super-bin ---
-        double neutronFlux = 0;
-        double fluxVar = 0;
-        for (int jx = 1; jx <= hFlux->GetNbinsX(); jx++) {
-            double E_low = hFlux->GetXaxis()->GetBinLowEdge(jx);
-            double E_high = hFlux->GetXaxis()->GetBinUpEdge(jx);
-            if (E_low >= E_n_low && E_high <= E_n_high) {
-                double binWidth = E_high - E_low;
-                neutronFlux += hFlux->GetBinContent(jx) * binWidth;
-                fluxVar += pow(hFlux->GetBinError(jx) * binWidth, 2);
-            }
+        int binLow = hFlux->FindBin(E_n_low);
+        int binHigh = hFlux->FindBin(E_n_high);
+
+        // Integrate flux using bin widths (ROOT handles non-uniform bins correctly)
+        double neutronFlux = hFlux->Integral(binLow, binHigh, "width"); // use GetBinContent
+
+        // Compute variance of flux (error propagation)
+        double fluxVar = 0.0;
+        for (int jx = binLow; jx <= binHigh; ++jx) {
+            double err = hFlux->GetBinError(jx);
+            double width = hFlux->GetBinWidth(jx);
+            fluxVar += pow(err * width, 2);
         }
+
         double neutronFluxErr = (neutronFlux > 0) ? sqrt(fluxVar) : 0.0;
+
         if (neutronFlux <= 0) {
             std::cout << "Neutron flux zero. Skipping bin." << std::endl;
             delete projY;
@@ -218,22 +227,30 @@ void CrossSection(TString inputFileName, TString histogramName,
         }
 
         // --- Cross section constants ---
-        double amu = 1.66e-24;  // atomic mass unit [g]
-        double barn = 1e-24;   // cm^2
+        const double amu = 1.66e-24;  // atomic mass unit [g]
+        const double barn = 1e-24;    // cm^2
         double CONST = (amu * massNr) / (eff * rho) * (1.0 / (4.0 * TMath::Pi()));  // cm^2
         CONST /= barn; // convert to barns
 
         // --- Cross section calculation ---
-        double xs = (area / neutronFlux) * CONST;
-        double xsVar_stat = pow(CONST,2) * (areaVar/(neutronFlux*neutronFlux) +
-                                             (area*area)*fluxVar/pow(neutronFlux,4));
+        double xs = (area / neutronFlux) * CONST * 1000;
+
+        // Statistical uncertainty propagation
+        double xsVar_stat = pow(CONST, 2) * (
+            areaVar / pow(neutronFlux, 2) +
+            pow(area, 2) * fluxVar / pow(neutronFlux, 4)
+        );
+
         if (xsVar_stat < 0) xsVar_stat = 0;
         double xsErr_stat = sqrt(xsVar_stat);
 
-        double relEffErr = 0;
-        double relRhoErr = 0;
-        double xsErr_sys = xs * sqrt(relEffErr*relEffErr + relRhoErr*relRhoErr);
-        double xsErr_total = sqrt(xsErr_stat*xsErr_stat + xsErr_sys*xsErr_sys);
+        // Optional: systematic uncertainties (currently zero)
+        double relEffErr = 0.0;
+        double relRhoErr = 0.0;
+        double xsErr_sys = xs * sqrt(relEffErr * relEffErr + relRhoErr * relRhoErr);
+
+        // Total uncertainty
+        double xsErr_total = sqrt(xsErr_stat * xsErr_stat + xsErr_sys * xsErr_sys);
 
         // --- Store results ---
         E_n.push_back(Ecenter);
@@ -260,7 +277,7 @@ void CrossSection(TString inputFileName, TString histogramName,
         SaveCanvasToPDF((TCanvas*)gPad, pdfName, firstPage);
 
         std::cout << "Area = " << area << ", Flux = " << neutronFlux
-                  << ", xs = " << xs << " ± " << xsErr_total << std::endl;
+                  << ", xs = " << xs << " ± " << xsErr_total << " Const: " << CONST << std::endl;
 
         delete projY;
         std::cout << std::endl;
@@ -269,7 +286,7 @@ void CrossSection(TString inputFileName, TString histogramName,
     // --- Final graph: cross section vs neutron energy ---
     int N = E_n.size();
     TGraphErrors *gr = new TGraphErrors(N, &E_n[0], &sigma[0], &Eerr[0], &sigmaErr[0]);
-    TString title = Form("Cross section for %.1f keV gamma; Neutron energy [eV]; Cross Section [barn]", interestGammaEnergy);
+    TString title = Form("Cross section for %.1f keV gamma; Neutron energy [eV]; Cross Section [mb]", interestGammaEnergy);
     gr->SetTitle(title);
     gr->SetMarkerStyle(20);
     gr->SetMarkerColor(kBlue);
@@ -280,6 +297,7 @@ void CrossSection(TString inputFileName, TString histogramName,
 
     // --- Save output ROOT file ---
     TFile *fout = new TFile(outputRootName, "RECREATE");
+    gr->SetName("cross_section");
     gr->Write("sigma");
     fout->Close();
 

@@ -756,8 +756,7 @@
                 activity: "268000",
                 dActivity: "13000",
                 initial_activity: false,
-                measure_time: "353.7",
-                decay_time: "4434900"
+                measure_time: "353.7"
             },
             "Eu152": {
                 detector: "LABR",
@@ -772,8 +771,7 @@
                 activity: "37980",
                 dActivity: "0",
                 initial_activity: true,
-                measure_time: "3497.1",
-                decay_time: "182186700"
+                measure_time: "3497.1"
             }
         };
 
@@ -1281,14 +1279,24 @@
                            <input id="initial-activity-${index}" data-field="initial_activity" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
                            <label for="initial-activity-${index}" class="ml-2 block text-sm text-gray-900 dark:text-gray-200">Initial activity</label>
                         </div>
-                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Measure time (s)</label>
-                            <input type="text" data-field="measure_time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</label>
+                            <input type="datetime-local" id="decay-start-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">End Date</label>
+                            <input type="datetime-local" id="decay-end-date" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
                             <p class="error-message hidden">This field is required.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Decay time (s)</label>
-                            <input type="text" data-field="decay_time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
+                            <input type="text" data-field="decay_time" id="decay-time-seconds" readonly class="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm">
+                            <p class="error-message hidden">This field is required.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Measure time (s)</label>
+                            <input type="text" data-field="measure_time" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 required">
                             <p class="error-message hidden">This field is required.</p>
                         </div>
                     </div>
@@ -1302,131 +1310,149 @@
             efficiencySourceCounter++;
         }
 
-        addEfficiencySourceBtn.addEventListener('click', addNewEfficiencySourceForm);
-
-        efficiencyView.addEventListener('change', function (e) {
-            if (e.target.matches('.source-select')) {
+        // Calcul automat decay_time pentru fiecare formular de sursă
+        efficiencySourceFormsContainer.addEventListener('change', function (e) {
+            if (e.target.id === 'decay-start-date' || e.target.id === 'decay-end-date') {
                 const group = e.target.closest('.efficiency-source-form-group');
-                const selectedSource = e.target.value;
-                const source = efficiencySourceData[selectedSource];
-
-                // Golește toate câmpurile de introducere
-                group.querySelectorAll('input').forEach(input => input.value = '');
-                group.querySelector('[data-field="initial_activity"]').checked = false;
-
-                if (source) {
-                    group.querySelector('[data-field="energies"]').value = source.energies;
-                    group.querySelector('[data-field="search_windows"]').value = source.search_windows;
-                    group.querySelector('[data-field="sigma_guess"]').value = source.sigma_guess;
-                    group.querySelector('[data-field="intensity"]').value = source.intensity;
-                    group.querySelector('[data-field="dIntensity"]').value = source.dIntensity;
-                    group.querySelector('[data-field="halflife"]').value = source.halflife;
-                    group.querySelector('[data-field="dHalflife"]').value = source.dHalflife;
-                    group.querySelector('[data-field="activity"]').value = source.activity;
-                    group.querySelector('[data-field="dActivity"]').value = source.dActivity;
-                    group.querySelector('[data-field="initial_activity"]').checked = source.initial_activity;
-                    group.querySelector('[data-field="measure_time"]').value = source.measure_time;
-                    group.querySelector('[data-field="decay_time"]').value = source.decay_time;
-                    group.querySelector('[data-field="detector"]').value = source.detector;
-                    group.querySelector('[data-field="runName"]').value = source.runName;
-                }
-            }
-        });
-        efficiencyView.addEventListener('input', function (e) {
-            if (e.target.classList.contains('required')) {
-                const errorMessage = e.target.nextElementSibling;
-                if (e.target.value.trim()) {
-                    e.target.classList.remove('has-error');
-                    if (errorMessage) {
-                        errorMessage.classList.add('hidden');
-                    }
+                const startInput = group.querySelector('#decay-start-date');
+                const endInput = group.querySelector('#decay-end-date');
+                const decayTimeInput = group.querySelector('#decay-time-seconds');
+                if (startInput.value && endInput.value) {
+                    const startDate = new Date(startInput.value);
+                    const endDate = new Date(endInput.value);
+                    const diffSeconds = (endDate - startDate) / 1000;
+                    decayTimeInput.value = diffSeconds > 0 ? diffSeconds.toFixed(0) : '';
+                } else {
+                    decayTimeInput.value = '';
                 }
             }
         });
 
-        efficiencySourceFormsContainer.addEventListener('click', function (e) {
-            if (e.target.classList.contains('remove-efficiency-source-btn')) {
-                e.target.closest('.efficiency-source-form-group').remove();
-            }
-        });
+            addEfficiencySourceBtn.addEventListener('click', addNewEfficiencySourceForm);
 
-        runEfficiencyBtn.addEventListener('click', async () => {
-            if (!validateRequiredFields(efficiencyView)) {
-                showToast("Please fill in all required fields.", 'error');
-                return;
-            }
+            efficiencyView.addEventListener('change', function (e) {
+                if (e.target.matches('.source-select')) {
+                    const group = e.target.closest('.efficiency-source-form-group');
+                    const selectedSource = e.target.value;
+                    const source = efficiencySourceData[selectedSource];
 
-            const allSourceGroups = efficiencySourceFormsContainer.querySelectorAll('.efficiency-source-form-group');
-            const collectedData = {
-                modelChoice: Number(document.querySelector('input[name="model_choice"]:checked').value),
-                energyInterpolation: Number(document.querySelector('input[name="energy_interpolation"]').value),
-                ids: document.querySelector('input[name="ids_eff"]').value.trim().split(' ').filter(id => id !== '').map(id => parseInt(id, 10)),
-                sources: []
-            };
+                    // Golește toate câmpurile de introducere
+                    group.querySelectorAll('input').forEach(input => input.value = '');
+                    group.querySelector('[data-field="initial_activity"]').checked = false;
 
-            let allSourcesValid = true;
-
-            allSourceGroups.forEach(group => {
-                let groupValid = true;
-                const sourceData = {};
-
-                group.querySelectorAll('[data-field]').forEach(input => {
-                    const fieldName = input.getAttribute('data-field');
-
-                    // Validare câmpuri obligatorii
-                    if (input.classList.contains('required') && !input.value.trim() && input.type !== 'checkbox') {
-                        input.classList.add('has-error');
-                        group.querySelector('.error-message').classList.remove('hidden');
-                        groupValid = false;
-                    } else {
-                        input.classList.remove('has-error');
-                        group.querySelector('.error-message').classList.add('hidden');
+                    if (source) {
+                        group.querySelector('[data-field="energies"]').value = source.energies;
+                        group.querySelector('[data-field="search_windows"]').value = source.search_windows;
+                        group.querySelector('[data-field="sigma_guess"]').value = source.sigma_guess;
+                        group.querySelector('[data-field="intensity"]').value = source.intensity;
+                        group.querySelector('[data-field="dIntensity"]').value = source.dIntensity;
+                        group.querySelector('[data-field="halflife"]').value = source.halflife;
+                        group.querySelector('[data-field="dHalflife"]').value = source.dHalflife;
+                        group.querySelector('[data-field="activity"]').value = source.activity;
+                        group.querySelector('[data-field="dActivity"]').value = source.dActivity;
+                        group.querySelector('[data-field="initial_activity"]').checked = source.initial_activity;
+                        group.querySelector('[data-field="measure_time"]').value = source.measure_time;
+                        group.querySelector('[data-field="decay_time"]').value = source.decay_time;
+                        group.querySelector('[data-field="detector"]').value = source.detector;
+                        group.querySelector('[data-field="runName"]').value = source.runName;
                     }
-
-                    // Colectare date
-                    if (input.type === 'checkbox') {
-                        sourceData[fieldName] = input.checked;
-                    } else {
-                        const value = input.value.trim();
-                        // Dacă sunt mai multe valori separate prin spațiu sau virgulă, le facem array
-                        if (value.includes(',') || value.includes(' ')) {
-                            sourceData[fieldName] = value.split(/[\s,]+/).map(v => v.trim());
-                        } else {
-                            sourceData[fieldName] = value;
+                }
+            });
+            efficiencyView.addEventListener('input', function (e) {
+                if (e.target.classList.contains('required')) {
+                    const errorMessage = e.target.nextElementSibling;
+                    if (e.target.value.trim()) {
+                        e.target.classList.remove('has-error');
+                        if (errorMessage) {
+                            errorMessage.classList.add('hidden');
                         }
+                    }
+                }
+            });
+
+            efficiencySourceFormsContainer.addEventListener('click', function (e) {
+                if (e.target.classList.contains('remove-efficiency-source-btn')) {
+                    e.target.closest('.efficiency-source-form-group').remove();
+                }
+            });
+
+            runEfficiencyBtn.addEventListener('click', async () => {
+                if (!validateRequiredFields(efficiencyView)) {
+                    showToast("Please fill in all required fields.", 'error');
+                    return;
+                }
+
+                const allSourceGroups = efficiencySourceFormsContainer.querySelectorAll('.efficiency-source-form-group');
+                const collectedData = {
+                    modelChoice: Number(document.querySelector('input[name="model_choice"]:checked').value),
+                    energyInterpolation: Number(document.querySelector('input[name="energy_interpolation"]').value),
+                    ids: document.querySelector('input[name="ids_eff"]').value.trim().split(' ').filter(id => id !== '').map(id => parseInt(id, 10)),
+                    sources: []
+                };
+
+                let allSourcesValid = true;
+
+                allSourceGroups.forEach(group => {
+                    let groupValid = true;
+                    const sourceData = {};
+
+                    group.querySelectorAll('[data-field]').forEach(input => {
+                        const fieldName = input.getAttribute('data-field');
+
+                        // Validare câmpuri obligatorii
+                        if (input.classList.contains('required') && !input.value.trim() && input.type !== 'checkbox') {
+                            input.classList.add('has-error');
+                            group.querySelector('.error-message').classList.remove('hidden');
+                            groupValid = false;
+                        } else {
+                            input.classList.remove('has-error');
+                            group.querySelector('.error-message').classList.add('hidden');
+                        }
+
+                        // Colectare date
+                        if (input.type === 'checkbox') {
+                            sourceData[fieldName] = input.checked;
+                        } else {
+                            const value = input.value.trim();
+                            // Dacă sunt mai multe valori separate prin spațiu sau virgulă, le facem array
+                            if (value.includes(',') || value.includes(' ')) {
+                                sourceData[fieldName] = value.split(/[\s,]+/).map(v => v.trim());
+                            } else {
+                                sourceData[fieldName] = value;
+                            }
+                        }
+                    });
+
+                    // Adaugă și numele sursei
+                    sourceData.source = group.querySelector('.source-select').value;
+
+                    if (groupValid) {
+                        collectedData.sources.push(sourceData);
+                    } else {
+                        allSourcesValid = false;
                     }
                 });
 
-                // Adaugă și numele sursei
-                sourceData.source = group.querySelector('.source-select').value;
-
-                if (groupValid) {
-                    collectedData.sources.push(sourceData);
-                } else {
-                    allSourcesValid = false;
+                if (!allSourcesValid) {
+                    showToast("Please correct the errors in the source groups.", 'error');
+                    return;
                 }
+
+                const jsonPayload = JSON.stringify(collectedData, null, 2);
+
+                showJsonConfirm("Confirmare date eficiență?", jsonPayload, () => {
+                    const blob = new Blob([jsonPayload], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'config_eff.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast("Efficiency data downloaded successfully!", 'success');
+                });
             });
-
-            if (!allSourcesValid) {
-                showToast("Please correct the errors in the source groups.", 'error');
-                return;
-            }
-
-            const jsonPayload = JSON.stringify(collectedData, null, 2);
-
-            showJsonConfirm("Confirmare date eficiență?", jsonPayload, () => {
-                const blob = new Blob([jsonPayload], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'config_eff.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast("Efficiency data downloaded successfully!", 'success');
-            });
-        });
 
 
 

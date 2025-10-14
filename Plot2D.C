@@ -113,6 +113,7 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
     // Create a TChain to combine multiple ROOT files
     //-------------------------------------------------------
     TChain *chain = new TChain(Detector); // detector = tree name in ROOT files
+    TChain *chain2 = new TChain("PKUP"); // detector = tree name in ROOT files
 
     for (const auto &RootFileNr : RootFileNrs) {
         TString FName = rootFolder + "run" + RootFileNr + ".root";
@@ -125,61 +126,34 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
         }
 
         chain->Add(FName);  // add the file to TChain
+        chain2->Add(FName); // add the file to TChain
     }
 
-   //-------------------------------------------------------
-    // Find last (maximum) BunchNumber that actually has data
-    // for each run in the chain
-    //-------------------------------------------------------
-    double totalLastBunchSum = 0;
-    std::vector<double> lastBunchPerRun;
+    Float_t PsInt2;
+    chain2->SetBranchAddress("PulseIntensity", &PsInt2);        // detector ID branch
+    Long64_t nEntries2 = chain2->GetEntries(); // total number of events in TChain
 
-    if (chain->GetBranch("BunchNumber")) {
-        TObjArray *fileElements = chain->GetListOfFiles();
+    int C_parasitic, C_dedicated1, C_dedicated2;
 
-        std::ofstream summary("maxBunchSummary.txt");
-        summary << "Run\tLastBunchNumber\n";
+    if (chain2->GetBranch("PulseIntensity")) {
+        TObjArray *fileElements = chain2->GetListOfFiles();
 
-        for (int i = 0; i < fileElements->GetEntries(); ++i) {
-            TChainElement *element = (TChainElement*)fileElements->At(i);
-            TString fname = element->GetTitle();
-            TFile file(fname, "READ");
+        std::ofstream summary("2D_Plots/pulse_intensity.txt");
+        summary << "Parasitic\tDedicated1\tDedicated2\n";
 
-            if (file.IsZombie()) {
-                std::cerr << "⚠️  Cannot open file: " << fname << std::endl;
-                continue;
-            }
-
-            TTree *t = (TTree*)file.Get(Detector); // same tree name as in TChain
-            if (!t || !t->GetBranch("BunchNumber")) {
-                std::cerr << "⚠️  Branch 'BunchNumber' not found in " << fname << std::endl;
-                continue;
-            }
-
-            // Get maximum value that actually exists in the data
-            double lastBunch = t->GetMaximum("BunchNumber");
-
-            std::cout << "Run " << i+1 << " (" << fname << ") → "
-                    << "Last Bunch with entries = " << lastBunch << std::endl;
-
-            summary << "run" << i+1 << "\t" << lastBunch << "\n";
-
-            lastBunchPerRun.push_back(lastBunch);
-            totalLastBunchSum += lastBunch;
-
-            file.Close();
+        for (int i = 0; i < nEntries2; ++i) {
+            chain2->GetEntry(i); // load event
+            if (PsInt2 <= 7.5e12 && PsInt2 >= 3e12) C_parasitic++;
+            if(PsInt2 >= 7.5e12 && PsInt2 <= 8.5e12) C_dedicated1++;
+            if(PsInt2 >= 8.5e12) C_dedicated2++;
         }
 
         summary << "====================================\n";
-        summary << "Total sum of last bunch numbers = " << totalLastBunchSum << "\n";
+        summary << C_parasitic << " " << C_dedicated1 << " " << C_dedicated2 << "\n";
         summary.close();
 
-        std::cout << "====================================\n";
-        std::cout << "Total sum of last bunch numbers = " << totalLastBunchSum << std::endl;
-        std::cout << "Summary saved in: maxBunchSummary.txt" << std::endl;
-        std::cout << "====================================\n";
     } else {
-        std::cerr << "⚠️  Warning: Branch 'BunchNumber' not found in TChain.\n";
+        std::cerr << "⚠️  Warning: Branch 'Pulse Intensity' not found in TChain.\n";
     }
 
     //-------------------------------------------------------
@@ -260,7 +234,8 @@ void plot2D(const std::vector<TString> &RootFileNrs, TString Detector,
         //---------------------------------------------------
         // Calculate neutron energy from TOF
         //---------------------------------------------------
-        double delta_t = TOF - TF;
+        double offset = 0; // time offset correction if needed
+        double delta_t = TOF - TF - offset;
         if (delta_t == 0) continue; // avoid division by zero
 
         float En = pow((72.2977 * distance / (delta_t * 1e-3)), 2); // neutron energy in eV
